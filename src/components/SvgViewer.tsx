@@ -1,7 +1,9 @@
 import React, { useRef, useState, useCallback, useEffect, useLayoutEffect } from "react";
+import { Tooltip } from "@base-ui/react/tooltip";
 
 interface SvgViewerProps {
   svgHtml: string;
+  portalContainer?: HTMLElement;
 }
 
 const MIN_ZOOM = 0.1;
@@ -10,7 +12,7 @@ const ZOOM_STEP = 0.15;
 
 // svgHtml is trusted output from beautiful-mermaid's renderMermaidSVG,
 // not arbitrary user HTML.
-export function SvgViewer({ svgHtml }: SvgViewerProps) {
+export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -167,74 +169,109 @@ export function SvgViewer({ svgHtml }: SvgViewerProps) {
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
         }}
+        // svgHtml is trusted output from beautiful-mermaid's renderer,
+        // not arbitrary user HTML.
         dangerouslySetInnerHTML={{ __html: svgHtml }}
       />
 
       {/* Floating controls */}
       <div className="zoom-controls">
-        <button className="zoom-btn" onClick={zoomIn} title="Zoom in">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
+        <Tooltip.Root>
+          <Tooltip.Trigger className="zoom-btn" onClick={zoomIn} aria-label="Zoom in">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </Tooltip.Trigger>
+          <Tooltip.Portal container={portalContainer}>
+            <Tooltip.Positioner side="top" sideOffset={6}>
+              <Tooltip.Popup className="tooltip-popup">Zoom in</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+
         <span className="zoom-level">{pct}%</span>
-        <button className="zoom-btn" onClick={zoomOut} title="Zoom out">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger className="zoom-btn" onClick={zoomOut} aria-label="Zoom out">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </Tooltip.Trigger>
+          <Tooltip.Portal container={portalContainer}>
+            <Tooltip.Positioner side="top" sideOffset={6}>
+              <Tooltip.Popup className="tooltip-popup">Zoom out</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+
         <div className="zoom-sep" />
-        <button className="zoom-btn" onClick={fitToView} title="Fit to view">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M8 3H5a2 2 0 0 0-2 2v3" />
-            <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
-            <path d="M3 16v3a2 2 0 0 0 2 2h3" />
-            <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-          </svg>
-        </button>
-        <button className="zoom-btn" onClick={resetView} title="Reset to 100%">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-            <path d="M3 3v5h5" />
-          </svg>
-        </button>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger className="zoom-btn" onClick={fitToView} aria-label="Fit to view">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+              <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+              <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+            </svg>
+          </Tooltip.Trigger>
+          <Tooltip.Portal container={portalContainer}>
+            <Tooltip.Positioner side="top" sideOffset={6}>
+              <Tooltip.Popup className="tooltip-popup">Fit to view</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+
+        <Tooltip.Root>
+          <Tooltip.Trigger className="zoom-btn" onClick={resetView} aria-label="Reset to 100%">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+          </Tooltip.Trigger>
+          <Tooltip.Portal container={portalContainer}>
+            <Tooltip.Positioner side="top" sideOffset={6}>
+              <Tooltip.Popup className="tooltip-popup">Reset to 100%</Tooltip.Popup>
+            </Tooltip.Positioner>
+          </Tooltip.Portal>
+        </Tooltip.Root>
       </div>
     </div>
   );
