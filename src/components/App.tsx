@@ -105,7 +105,34 @@ function App() {
     e.target.value = "";
   }, []);
 
+  const [codeCopied, setCodeCopied] = useState(false);
   const [svgCopied, setSvgCopied] = useState(false);
+
+  const handleCopyCode = useCallback(() => {
+    if (!code) return;
+    try {
+      const textarea = document.createElement("textarea");
+      textarea.value = code;
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      textarea.style.top = "-9999px";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch {
+      navigator.clipboard
+        ?.writeText(code)
+        .then(() => {
+          setCodeCopied(true);
+          setTimeout(() => setCodeCopied(false), 2000);
+        })
+        .catch(() => {});
+    }
+  }, [code]);
 
   const handleExportSVG = useCallback(() => {
     if (!svgOutput) return;
@@ -323,42 +350,7 @@ function App() {
                 Dark
               </Toggle>
             </ToggleGroup>
-
-            <Tooltip.Root>
-              <Tooltip.Trigger
-                className="icon-btn"
-                onClick={handleImport}
-                aria-label="Import .mmd file"
-              >
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-              </Tooltip.Trigger>
-              <Tooltip.Portal container={portalContainer}>
-                <Tooltip.Positioner sideOffset={6}>
-                  <Tooltip.Popup className="tooltip-popup">Import .mmd file</Tooltip.Popup>
-                </Tooltip.Positioner>
-              </Tooltip.Portal>
-            </Tooltip.Root>
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".mmd,.mermaid,.txt,.md"
-            style={{ display: "none" }}
-            onChange={handleFileChange}
-          />
         </header>
 
         <main className={`app-main${isResizing ? " resizing" : ""}`} ref={mainRef}>
@@ -379,6 +371,86 @@ function App() {
                 <polyline points="8 6 2 12 8 18" />
               </svg>
               <span>Editor</span>
+
+              <div className="panel-tab-actions">
+                <Tooltip.Root>
+                  <Tooltip.Trigger
+                    className="icon-btn"
+                    onClick={handleCopyCode}
+                    disabled={!code}
+                    aria-label="Copy source"
+                  >
+                    {codeCopied ? (
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--accent)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="13"
+                        height="13"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                      </svg>
+                    )}
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal container={portalContainer}>
+                    <Tooltip.Positioner sideOffset={6}>
+                      <Tooltip.Popup className="tooltip-popup">Copy source</Tooltip.Popup>
+                    </Tooltip.Positioner>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+
+                <Tooltip.Root>
+                  <Tooltip.Trigger
+                    className="icon-btn"
+                    onClick={handleImport}
+                    aria-label="Import .mmd file"
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                  </Tooltip.Trigger>
+                  <Tooltip.Portal container={portalContainer}>
+                    <Tooltip.Positioner sideOffset={6}>
+                      <Tooltip.Popup className="tooltip-popup">Import .mmd file</Tooltip.Popup>
+                    </Tooltip.Positioner>
+                  </Tooltip.Portal>
+                </Tooltip.Root>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".mmd,.mermaid,.txt,.md"
+                  style={{ display: "none" }}
+                  onChange={handleFileChange}
+                />
+              </div>
             </div>
             <div className="panel-content editor-content">
               <MermaidEditor value={code} onChange={setCode} isDark={isDark} />
