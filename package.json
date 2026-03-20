@@ -6,7 +6,12 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "lint": "oxlint src/",
+    "lint:fix": "oxlint --fix src/",
+    "format": "oxfmt --write src/",
+    "format:check": "oxfmt --check src/",
+    "prepare": "husky"
   },
   "dependencies": {
     "@astrojs/react": "5.0.1",
@@ -22,8 +27,13 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@commitlint/cli": "19.8.1",
+    "@commitlint/config-conventional": "19.8.1",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
+    "husky": "9.1.7",
+    "oxfmt": "0.41.0",
+    "oxlint": "1.56.0",
     "typescript": "5.9.3"
   },
   "packageManager": "pnpm@10.23.0+sha512.21c4e5698002ade97e4efe8b8b4a89a8de3c85a37919f957e7a0f30f38fbc5bbdd05980ffe29179b2fb6e6e691242e098d945d1601772cad0fef5fb6411e2a4b"

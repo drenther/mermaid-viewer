@@ -1,4 +1,6 @@
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -12,16 +14,24 @@
   --transition: 150ms ease;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   width: 100%;
   overflow: hidden;
 }
 
-astro-island { display: contents; }
+astro-island {
+  display: contents;
+}
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -34,7 +44,9 @@ body {
   flex-direction: column;
   background: var(--bg);
   color: var(--fg);
-  transition: background var(--transition), color var(--transition);
+  transition:
+    background var(--transition),
+    color var(--transition);
 }
 
 /* ===== HEADER ===== */
@@ -126,12 +138,12 @@ body {
 .toggle-btn.active {
   background: var(--surface);
   color: var(--fg);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
 .dark .toggle-btn.active {
   background: var(--border);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Icon Buttons */
@@ -244,14 +256,18 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.06);
   z-index: 20;
   overflow: hidden;
   min-width: 140px;
 }
 
 .dark .dropdown-menu {
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .dropdown-menu button {
@@ -307,7 +323,7 @@ body {
 }
 
 .gutter::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   bottom: 0;
@@ -337,7 +353,7 @@ body {
 
 .cm-wrapper .cm-scroller {
   overflow: auto;
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-family: "JetBrains Mono", "Fira Code", "SF Mono", "Cascadia Code", "Consolas", monospace;
 }
 
 /* ===== SVG VIEWER (zoom & pan) ===== */
@@ -380,13 +396,17 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 2px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.06);
   z-index: 5;
   pointer-events: auto;
 }
 
 .dark .zoom-controls {
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+  box-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .zoom-btn {
@@ -413,7 +433,7 @@ body {
 }
 
 .zoom-level {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 10.5px;
   font-weight: 600;
   color: var(--muted);
@@ -432,7 +452,7 @@ body {
 
 /* Crosshair hint on idle */
 .svg-viewer::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -442,7 +462,7 @@ body {
 
 /* ===== ASCII PREVIEW ===== */
 .ascii-container {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 13px;
   line-height: 1.3;
   color: var(--fg);
@@ -476,7 +496,7 @@ body {
 }
 
 .error-text {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   line-height: 1.6;
   color: color-mix(in srgb, #f85149 80%, var(--fg));

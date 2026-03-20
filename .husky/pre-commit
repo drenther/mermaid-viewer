@@ -1,0 +1,3 @@
+pnpm oxfmt --write src/
+pnpm oxlint --fix src/
+git update-index --again
