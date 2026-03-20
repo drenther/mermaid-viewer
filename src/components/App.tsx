@@ -24,6 +24,8 @@ function App() {
   const [svgOutput, setSvgOutput] = useState<string>('')
   const [asciiOutput, setAsciiOutput] = useState<string>('')
   const [copied, setCopied] = useState(false)
+  const [downloadOpen, setDownloadOpen] = useState(false)
+  const downloadRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const mainRef = useRef<HTMLDivElement>(null)
   const [editorFraction, setEditorFraction] = useState(0.5)
@@ -147,6 +149,79 @@ function App() {
     }
   }, [asciiOutput])
 
+  // Close download dropdown on outside click
+  useEffect(() => {
+    if (!downloadOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (downloadRef.current && !downloadRef.current.contains(e.target as Node)) {
+        setDownloadOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [downloadOpen])
+
+  const handleDownloadSVG = useCallback(() => {
+    if (!svgOutput) return
+    const blob = new Blob([svgOutput], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'diagram.svg'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    setDownloadOpen(false)
+  }, [svgOutput])
+
+  const handleDownloadPNG = useCallback(() => {
+    if (!svgOutput) return
+    const svgTag = svgOutput.match(/<svg[^>]*>/)
+    if (!svgTag) return
+
+    let width = 800
+    let height = 600
+
+    const widthMatch = svgTag[0].match(/width="([^"]+)"/)
+    const heightMatch = svgTag[0].match(/height="([^"]+)"/)
+    if (widthMatch && heightMatch) {
+      width = parseFloat(widthMatch[1])
+      height = parseFloat(heightMatch[1])
+    } else {
+      const viewBoxMatch = svgTag[0].match(/viewBox="[^"]*\s([\d.]+)\s([\d.]+)"/)
+      if (viewBoxMatch) {
+        width = parseFloat(viewBoxMatch[1])
+        height = parseFloat(viewBoxMatch[2])
+      }
+    }
+
+    const scale = 2
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = width * scale
+      canvas.height = height * scale
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      ctx.scale(scale, scale)
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob((blob) => {
+        if (!blob) return
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'diagram.png'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }, 'image/png')
+    }
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgOutput)
+    setDownloadOpen(false)
+  }, [svgOutput])
+
   // Gutter drag-to-resize
   const handleGutterPointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
@@ -212,46 +287,9 @@ function App() {
             </button>
           </div>
 
-          <div className="header-sep" />
-
-          <div className="toggle-group" role="radiogroup" aria-label="Renderer">
-            <button
-              className={`toggle-btn ${renderer === 'svg' ? 'active' : ''}`}
-              onClick={() => setRenderer('svg')}
-              aria-pressed={renderer === 'svg'}
-            >SVG</button>
-            <button
-              className={`toggle-btn ${renderer === 'ascii' ? 'active' : ''}`}
-              onClick={() => setRenderer('ascii')}
-              aria-pressed={renderer === 'ascii'}
-            >ASCII</button>
-          </div>
-
-          <div className="header-sep" />
-
           <button className="icon-btn" onClick={handleImport} title="Import .mmd file">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </button>
-
-          {renderer === 'svg' && svgOutput && (
-            <button className="icon-btn" onClick={handleExportSVG} title="Copy SVG code">
-              {svgCopied ? (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              )}
-            </button>
-          )}
-
-          {renderer === 'ascii' && asciiOutput && (
-            <button className="icon-btn" onClick={handleCopyASCII} title="Copy ASCII">
-              {copied ? (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              )}
-            </button>
-          )}
         </div>
         <input
           ref={fileInputRef}
@@ -289,7 +327,55 @@ function App() {
           <div className="panel-tab">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             <span>Preview</span>
-            <span className="renderer-pill">{renderer.toUpperCase()}</span>
+
+            <div className="panel-tab-actions">
+              <div className="toggle-group" role="radiogroup" aria-label="Renderer">
+                <button
+                  className={`toggle-btn ${renderer === 'svg' ? 'active' : ''}`}
+                  onClick={() => setRenderer('svg')}
+                  aria-pressed={renderer === 'svg'}
+                >SVG</button>
+                <button
+                  className={`toggle-btn ${renderer === 'ascii' ? 'active' : ''}`}
+                  onClick={() => setRenderer('ascii')}
+                  aria-pressed={renderer === 'ascii'}
+                >ASCII</button>
+              </div>
+
+              {renderer === 'svg' && svgOutput && (
+                <button className="icon-btn" onClick={handleExportSVG} title="Copy SVG code">
+                  {svgCopied ? (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  )}
+                </button>
+              )}
+
+              {renderer === 'ascii' && asciiOutput && (
+                <button className="icon-btn" onClick={handleCopyASCII} title="Copy ASCII">
+                  {copied ? (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  )}
+                </button>
+              )}
+
+              {svgOutput && (
+                <div className="download-dropdown" ref={downloadRef}>
+                  <button className="icon-btn" onClick={() => setDownloadOpen(o => !o)} title="Download diagram">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  </button>
+                  {downloadOpen && (
+                    <div className="dropdown-menu">
+                      <button onClick={handleDownloadSVG}>Download SVG</button>
+                      <button onClick={handleDownloadPNG}>Download PNG</button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div className="panel-content preview-content">
             {error ? (
