@@ -427,8 +427,13 @@ function App() {
                 </button>
               </div>
 
-              {renderer === "svg" && svgOutput && (
-                <button className="icon-btn" onClick={handleExportSVG} title="Copy SVG code">
+              {renderer === "svg" ? (
+                <button
+                  className="icon-btn"
+                  onClick={handleExportSVG}
+                  title="Copy SVG code"
+                  disabled={!svgOutput}
+                >
                   {svgCopied ? (
                     <svg
                       width="13"
@@ -458,10 +463,13 @@ function App() {
                     </svg>
                   )}
                 </button>
-              )}
-
-              {renderer === "ascii" && asciiOutput && (
-                <button className="icon-btn" onClick={handleCopyASCII} title="Copy ASCII">
+              ) : (
+                <button
+                  className="icon-btn"
+                  onClick={handleCopyASCII}
+                  title="Copy ASCII"
+                  disabled={!asciiOutput}
+                >
                   {copied ? (
                     <svg
                       width="13"
@@ -493,36 +501,35 @@ function App() {
                 </button>
               )}
 
-              {svgOutput && (
-                <div className="download-dropdown" ref={downloadRef}>
-                  <button
-                    className="icon-btn"
-                    onClick={() => setDownloadOpen((o) => !o)}
-                    title="Download diagram"
+              <div className="download-dropdown" ref={downloadRef}>
+                <button
+                  className="icon-btn"
+                  onClick={() => setDownloadOpen((o) => !o)}
+                  title="Download diagram"
+                  disabled={!svgOutput}
+                >
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 10 12 15 17 10" />
-                      <line x1="12" y1="15" x2="12" y2="3" />
-                    </svg>
-                  </button>
-                  {downloadOpen && (
-                    <div className="dropdown-menu">
-                      <button onClick={handleDownloadSVG}>Download SVG</button>
-                      <button onClick={handleDownloadPNG}>Download PNG</button>
-                    </div>
-                  )}
-                </div>
-              )}
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                </button>
+                {downloadOpen && (
+                  <div className="dropdown-menu">
+                    <button onClick={handleDownloadSVG}>Download SVG</button>
+                    <button onClick={handleDownloadPNG}>Download PNG</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <div className="panel-content preview-content">

@@ -111,6 +111,7 @@ body {
   border-radius: var(--radius);
   padding: 2px;
   gap: 2px;
+  height: 30px;
 }
 
 .toggle-btn {
@@ -118,6 +119,7 @@ body {
   align-items: center;
   gap: 5px;
   padding: 4px 10px;
+  height: 24px;
   border: none;
   background: transparent;
   color: var(--muted);
@@ -161,10 +163,16 @@ body {
   transition: all var(--transition);
 }
 
-.icon-btn:hover {
+.icon-btn:hover:not(:disabled) {
   color: var(--fg);
   border-color: var(--muted);
   background: var(--surface-2);
+}
+
+.icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ===== MAIN ===== */
@@ -227,6 +235,7 @@ body {
 
 .panel-tab-actions .toggle-group {
   padding: 1px;
+  height: 24px;
 }
 
 .panel-tab-actions .toggle-btn {
@@ -234,6 +243,7 @@ body {
   font-size: 11px;
   text-transform: none;
   letter-spacing: 0;
+  height: 20px;
 }
 
 .panel-tab-actions .icon-btn {
