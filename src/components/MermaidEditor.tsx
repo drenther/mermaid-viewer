@@ -13,95 +13,9 @@ import {
 } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
-import { StreamLanguage } from "@codemirror/language";
-
-// Simple Mermaid-like syntax mode
-const mermaidLanguage = StreamLanguage.define({
-  token(stream, _state) {
-    // Comments
-    if (stream.match(/^%%/)) {
-      stream.skipToEnd();
-      return "comment";
-    }
-
-    // Keywords (diagram types & directives)
-    if (
-      stream.match(
-        /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram-v2|stateDiagram|erDiagram|gantt|pie|gitGraph|journey|xychart-beta|mindmap|timeline|quadrantChart|requirementDiagram|C4Context|C4Container|C4Component|C4Deployment)\b/,
-      )
-    ) {
-      return "keyword";
-    }
-
-    // Sub-keywords
-    if (
-      stream.match(
-        /^(subgraph|end|participant|actor|loop|alt|else|opt|par|and|critical|note|over|left of|right of|class|classDef|click|style|linkStyle|direction|title|section|as)\b/,
-      )
-    ) {
-      return "keyword";
-    }
-
-    // Direction keywords
-    if (stream.match(/^(TD|TB|BT|RL|LR)\b/)) {
-      return "atom";
-    }
-
-    // Arrow types
-    if (
-      stream.match(
-        /^(-->|==>|-.->|<-->|<-.->|<==>|---|\.\.\.|===|--x|--o|-\.-x|-\.-o|--|\.\.|\|\|--\|\||o--|--o\{|\})/,
-      )
-    ) {
-      return "operator";
-    }
-
-    // Strings in quotes
-    if (stream.match(/^"[^"]*"/)) {
-      return "string";
-    }
-
-    // Labels in |...|
-    if (stream.match(/^\|[^|]*\|/)) {
-      return "string";
-    }
-
-    // Bracket content [...], {...}, (...), ((...)), [[...]], [(...)]
-    if (stream.match(/^[[({]/)) {
-      return "bracket";
-    }
-    if (stream.match(/^[\])}]/)) {
-      return "bracket";
-    }
-
-    // Annotations
-    if (stream.match(/^<<[^>]+>>/)) {
-      return "meta";
-    }
-
-    // Class references :::
-    if (stream.match(/^:::[a-zA-Z_-]+/)) {
-      return "variableName";
-    }
-
-    // Node IDs (alphanumeric)
-    if (stream.match(/^[a-zA-Z_]\w*/)) {
-      return "variableName";
-    }
-
-    // Numbers
-    if (stream.match(/^-?\d+(\.\d+)?/)) {
-      return "number";
-    }
-
-    // Skip everything else
-    stream.next();
-    return null;
-  },
-  startState() {
-    return {};
-  },
-});
+import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
+import { mermaid } from "codemirror-lang-mermaid";
+import { tags } from "@lezer/highlight";
 
 // GitHub Dark theme for CodeMirror
 const githubDarkTheme = EditorView.theme(
@@ -197,37 +111,33 @@ const githubLightTheme = EditorView.theme(
   { dark: false },
 );
 
-// Dark syntax highlighting
-const darkHighlight = EditorView.theme(
-  {
-    ".tok-keyword": { color: "#ff7b72", fontWeight: "600" },
-    ".tok-atom": { color: "#79c0ff" },
-    ".tok-string": { color: "#a5d6ff" },
-    ".tok-comment": { color: "#8b949e", fontStyle: "italic" },
-    ".tok-variableName": { color: "#e6edf3" },
-    ".tok-number": { color: "#79c0ff" },
-    ".tok-operator": { color: "#ff7b72" },
-    ".tok-bracket": { color: "#8b949e" },
-    ".tok-meta": { color: "#d2a8ff" },
-  },
-  { dark: true },
-);
+// Dark syntax highlighting (Lezer tag-based)
+const darkHighlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: "#ff7b72", fontWeight: "600" },
+  { tag: tags.controlKeyword, color: "#ff7b72", fontWeight: "600" },
+  { tag: tags.typeName, color: "#ffa657" },
+  { tag: tags.string, color: "#a5d6ff" },
+  { tag: tags.content, color: "#a5d6ff" },
+  { tag: tags.lineComment, color: "#8b949e", fontStyle: "italic" },
+  { tag: tags.variableName, color: "#e6edf3" },
+  { tag: tags.number, color: "#79c0ff" },
+  { tag: tags.contentSeparator, color: "#ff7b72" },
+  { tag: tags.modifier, color: "#79c0ff" },
+]);
 
-// Light syntax highlighting
-const lightHighlight = EditorView.theme(
-  {
-    ".tok-keyword": { color: "#cf222e", fontWeight: "600" },
-    ".tok-atom": { color: "#0550ae" },
-    ".tok-string": { color: "#0a3069" },
-    ".tok-comment": { color: "#6e7781", fontStyle: "italic" },
-    ".tok-variableName": { color: "#24292f" },
-    ".tok-number": { color: "#0550ae" },
-    ".tok-operator": { color: "#cf222e" },
-    ".tok-bracket": { color: "#6e7781" },
-    ".tok-meta": { color: "#8250df" },
-  },
-  { dark: false },
-);
+// Light syntax highlighting (Lezer tag-based)
+const lightHighlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: "#cf222e", fontWeight: "600" },
+  { tag: tags.controlKeyword, color: "#cf222e", fontWeight: "600" },
+  { tag: tags.typeName, color: "#953800" },
+  { tag: tags.string, color: "#0a3069" },
+  { tag: tags.content, color: "#0a3069" },
+  { tag: tags.lineComment, color: "#6e7781", fontStyle: "italic" },
+  { tag: tags.variableName, color: "#24292f" },
+  { tag: tags.number, color: "#0550ae" },
+  { tag: tags.contentSeparator, color: "#cf222e" },
+  { tag: tags.modifier, color: "#0550ae" },
+]);
 
 interface MermaidEditorProps {
   value: string;
@@ -265,9 +175,9 @@ export function MermaidEditor({ value, onChange, isDark }: MermaidEditorProps) {
         rectangularSelection(),
         crosshairCursor(),
         history(),
-        mermaidLanguage,
+        mermaid(),
         isDark ? githubDarkTheme : githubLightTheme,
-        isDark ? darkHighlight : lightHighlight,
+        syntaxHighlighting(isDark ? darkHighlightStyle : lightHighlightStyle),
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
         updateListener,
         EditorView.lineWrapping,
