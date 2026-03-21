@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
+    "dev": "portless mermaid-viewer astro dev",
     "build": "astro build",
     "preview": "astro preview",
     "lint": "oxlint src/",
