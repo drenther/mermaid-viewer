@@ -135,9 +135,11 @@ body {
   font-weight: 500;
   cursor: pointer;
   border-radius: calc(var(--radius) - 2px);
-  transition: all var(--transition);
+  transition: color var(--transition);
   white-space: nowrap;
   line-height: 1;
+  position: relative;
+  isolation: isolate;
 }
 
 .toggle-btn:hover {
@@ -145,12 +147,20 @@ body {
 }
 
 .toggle-btn[data-pressed] {
-  background: var(--surface);
   color: var(--fg);
+}
+
+/* Animated pill behind active toggle (positioned via motion layoutId) */
+.toggle-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(var(--radius) - 2px);
+  z-index: -1;
+  background: var(--surface);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-.dark .toggle-btn[data-pressed] {
+.dark .toggle-pill {
   background: var(--border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
@@ -418,7 +428,9 @@ body {
   color: var(--muted);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: all var(--transition);
+  transition:
+    color var(--transition),
+    background var(--transition);
 }
 
 .zoom-btn:hover {
@@ -427,7 +439,7 @@ body {
 }
 
 .zoom-btn:active {
-  transform: scale(0.92);
+  /* Scale handled by motion spring animation */
 }
 
 .zoom-level {

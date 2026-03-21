@@ -8,6 +8,7 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 import { MermaidEditor } from "./MermaidEditor";
 import { SvgViewer } from "./SvgViewer";
 import { layoutStore } from "../stores/layoutStore";
+import { motion, AnimatePresence } from "motion/react";
 import "../styles/app.css";
 
 const SAMPLE_DIAGRAM = `graph TD
@@ -310,6 +311,13 @@ function App() {
                 aria-label="Theme"
               >
                 <Toggle value="github-light" className="toggle-btn" aria-label="Light theme">
+                  {theme === "github-light" && (
+                    <motion.span
+                      layoutId="theme-pill"
+                      className="toggle-pill"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                    />
+                  )}
                   <svg
                     width="13"
                     height="13"
@@ -324,6 +332,13 @@ function App() {
                   Light
                 </Toggle>
                 <Toggle value="github-dark" className="toggle-btn" aria-label="Dark theme">
+                  {theme === "github-dark" && (
+                    <motion.span
+                      layoutId="theme-pill"
+                      className="toggle-pill"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                    />
+                  )}
                   <svg
                     width="13"
                     height="13"
@@ -377,34 +392,54 @@ function App() {
                         disabled={!code}
                         aria-label="Copy source"
                       >
-                        {codeCopied ? (
-                          <svg
-                            width="13"
-                            height="13"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="var(--accent)"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        ) : (
-                          <svg
-                            width="13"
-                            height="13"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                          </svg>
-                        )}
+                        <AnimatePresence mode="wait" initial={false}>
+                          {codeCopied ? (
+                            <motion.span
+                              key="check"
+                              initial={{ opacity: 0, scale: 0.5 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.5 }}
+                              transition={{ duration: 0.2 }}
+                              style={{ display: "flex" }}
+                            >
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="var(--accent)"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </motion.span>
+                          ) : (
+                            <motion.span
+                              key="copy"
+                              initial={{ opacity: 0, scale: 0.5 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.5 }}
+                              transition={{ duration: 0.2 }}
+                              style={{ display: "flex" }}
+                            >
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                              </svg>
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
                       </Tooltip.Trigger>
                       <Tooltip.Portal container={portalContainer}>
                         <Tooltip.Positioner sideOffset={6}>
@@ -486,9 +521,23 @@ function App() {
                       aria-label="Renderer"
                     >
                       <Toggle value="svg" className="toggle-btn" aria-label="SVG renderer">
+                        {renderer === "svg" && (
+                          <motion.span
+                            layoutId="renderer-pill"
+                            className="toggle-pill"
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                          />
+                        )}
                         SVG
                       </Toggle>
                       <Toggle value="ascii" className="toggle-btn" aria-label="ASCII renderer">
+                        {renderer === "ascii" && (
+                          <motion.span
+                            layoutId="renderer-pill"
+                            className="toggle-pill"
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                          />
+                        )}
                         ASCII
                       </Toggle>
                     </ToggleGroup>
@@ -501,34 +550,54 @@ function App() {
                           disabled={!svgOutput}
                           aria-label="Copy SVG code"
                         >
-                          {svgCopied ? (
-                            <svg
-                              width="13"
-                              height="13"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="var(--accent)"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          ) : (
-                            <svg
-                              width="13"
-                              height="13"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                            </svg>
-                          )}
+                          <AnimatePresence mode="wait" initial={false}>
+                            {svgCopied ? (
+                              <motion.span
+                                key="check"
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.5 }}
+                                transition={{ duration: 0.2 }}
+                                style={{ display: "flex" }}
+                              >
+                                <svg
+                                  width="13"
+                                  height="13"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="var(--accent)"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </motion.span>
+                            ) : (
+                              <motion.span
+                                key="copy"
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.5 }}
+                                transition={{ duration: 0.2 }}
+                                style={{ display: "flex" }}
+                              >
+                                <svg
+                                  width="13"
+                                  height="13"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
                         </Tooltip.Trigger>
                         <Tooltip.Portal container={portalContainer}>
                           <Tooltip.Positioner sideOffset={6}>
@@ -544,34 +613,54 @@ function App() {
                           disabled={!asciiOutput}
                           aria-label="Copy ASCII"
                         >
-                          {copied ? (
-                            <svg
-                              width="13"
-                              height="13"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="var(--accent)"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          ) : (
-                            <svg
-                              width="13"
-                              height="13"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                            </svg>
-                          )}
+                          <AnimatePresence mode="wait" initial={false}>
+                            {copied ? (
+                              <motion.span
+                                key="check"
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.5 }}
+                                transition={{ duration: 0.2 }}
+                                style={{ display: "flex" }}
+                              >
+                                <svg
+                                  width="13"
+                                  height="13"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="var(--accent)"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                              </motion.span>
+                            ) : (
+                              <motion.span
+                                key="copy"
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.5 }}
+                                transition={{ duration: 0.2 }}
+                                style={{ display: "flex" }}
+                              >
+                                <svg
+                                  width="13"
+                                  height="13"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                </svg>
+                              </motion.span>
+                            )}
+                          </AnimatePresence>
                         </Tooltip.Trigger>
                         <Tooltip.Portal container={portalContainer}>
                           <Tooltip.Positioner sideOffset={6}>
@@ -628,63 +717,103 @@ function App() {
                   </div>
                 </div>
                 <div className="panel-content preview-content">
-                  {error ? (
-                    <div className="error-box">
-                      <div className="error-icon">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                          <line x1="12" y1="9" x2="12" y2="13" />
-                          <line x1="12" y1="17" x2="12.01" y2="17" />
-                        </svg>
-                      </div>
-                      <pre className="error-text">{error}</pre>
-                    </div>
-                  ) : renderer === "ascii" && asciiUnsupported ? (
-                    <div className="ascii-fallback">
-                      <div className="fallback-notice">
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="var(--muted)"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <line x1="12" y1="16" x2="12" y2="12" />
-                          <line x1="12" y1="8" x2="12.01" y2="8" />
-                        </svg>
-                        <span>
-                          ASCII rendering doesn't support this diagram (nested subgraphs, complex
-                          edges). Showing SVG instead.
-                        </span>
-                        <button className="fallback-switch-btn" onClick={() => setRenderer("svg")}>
-                          Switch to SVG
-                        </button>
-                      </div>
-                      <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
-                    </div>
-                  ) : renderer === "svg" ? (
-                    <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
-                  ) : (
-                    <pre
-                      className="ascii-container"
-                      // svgHtml/asciiOutput is trusted output from beautiful-mermaid's renderer,
-                      // not arbitrary user HTML.
-                      dangerouslySetInnerHTML={{
-                        __html: asciiOutput || "Type a diagram to see ASCII output\u2026",
-                      }}
-                    />
-                  )}
+                  <AnimatePresence mode="wait" initial={false}>
+                    {error ? (
+                      <motion.div
+                        key="error"
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+                        style={{ width: "100%", height: "100%" }}
+                      >
+                        <div className="error-box">
+                          <div className="error-icon">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                              <line x1="12" y1="9" x2="12" y2="13" />
+                              <line x1="12" y1="17" x2="12.01" y2="17" />
+                            </svg>
+                          </div>
+                          <pre className="error-text">{error}</pre>
+                        </div>
+                      </motion.div>
+                    ) : renderer === "ascii" && asciiUnsupported ? (
+                      <motion.div
+                        key="fallback"
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+                        style={{ width: "100%", height: "100%" }}
+                      >
+                        <div className="ascii-fallback">
+                          <div className="fallback-notice">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="var(--muted)"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <circle cx="12" cy="12" r="10" />
+                              <line x1="12" y1="16" x2="12" y2="12" />
+                              <line x1="12" y1="8" x2="12.01" y2="8" />
+                            </svg>
+                            <span>
+                              ASCII rendering doesn't support this diagram (nested subgraphs,
+                              complex edges). Showing SVG instead.
+                            </span>
+                            <button
+                              className="fallback-switch-btn"
+                              onClick={() => setRenderer("svg")}
+                            >
+                              Switch to SVG
+                            </button>
+                          </div>
+                          <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
+                        </div>
+                      </motion.div>
+                    ) : renderer === "svg" ? (
+                      <motion.div
+                        key="svg"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        style={{ width: "100%", height: "100%" }}
+                      >
+                        <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="ascii"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        style={{ width: "100%", height: "100%" }}
+                      >
+                        {/* asciiOutput is trusted output from beautiful-mermaid's renderer */}
+                        <pre
+                          className="ascii-container"
+                          dangerouslySetInnerHTML={{
+                            __html: asciiOutput || "Type a diagram to see ASCII output\u2026",
+                          }}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </Panel>
             </Group>

@@ -1,6 +1,7 @@
 import React, { useRef, useCallback, useEffect, useLayoutEffect } from "react";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useStore, useSelector } from "@xstate/store/react";
+import { motion } from "motion/react";
 
 interface SvgViewerProps {
   svgHtml: string;
@@ -363,6 +364,12 @@ export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
       <div className="zoom-controls">
         <Tooltip.Root>
           <Tooltip.Trigger
+            render={
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: "spring", bounce: 0.4, duration: 0.25 }}
+              />
+            }
             className="zoom-btn"
             onClick={() => store.trigger.zoomIn()}
             aria-label="Zoom in"
@@ -392,6 +399,12 @@ export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
 
         <Tooltip.Root>
           <Tooltip.Trigger
+            render={
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: "spring", bounce: 0.4, duration: 0.25 }}
+              />
+            }
             className="zoom-btn"
             onClick={() => store.trigger.zoomOut()}
             aria-label="Zoom out"
@@ -419,7 +432,17 @@ export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
         <div className="zoom-sep" />
 
         <Tooltip.Root>
-          <Tooltip.Trigger className="zoom-btn" onClick={fitToView} aria-label="Fit to view">
+          <Tooltip.Trigger
+            render={
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: "spring", bounce: 0.4, duration: 0.25 }}
+              />
+            }
+            className="zoom-btn"
+            onClick={fitToView}
+            aria-label="Fit to view"
+          >
             <svg
               width="14"
               height="14"
@@ -445,6 +468,12 @@ export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
 
         <Tooltip.Root>
           <Tooltip.Trigger
+            render={
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: "spring", bounce: 0.4, duration: 0.25 }}
+              />
+            }
             className="zoom-btn"
             onClick={() => store.trigger.resetView()}
             aria-label="Reset to 100%"
