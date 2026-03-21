@@ -882,6 +882,13 @@ body {
     display: none;
   }
 
+  .app-footer {
+    font-size: 10px;
+    padding: 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
   .dialog-popup {
     min-width: unset;
     width: calc(100% - 32px);
@@ -905,6 +912,14 @@ body {
   .toggle-btn {
     padding: 4px 6px;
     font-size: 11px;
+  }
+
+  .footer-left {
+    display: none;
+  }
+
+  .footer-right {
+    margin-left: auto;
   }
 }
 
