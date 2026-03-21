@@ -820,10 +820,29 @@ function App() {
           </main>
 
           <footer className="app-footer">
-            <span>Powered by</span>
-            <a href="https://agents.craft.do/mermaid" target="_blank" rel="noopener noreferrer">
-              beautiful-mermaid
-            </a>
+            <div className="footer-left">
+              <span>Powered by</span>
+              <a href="https://agents.craft.do/mermaid" target="_blank" rel="noopener noreferrer">
+                beautiful-mermaid
+              </a>
+            </div>
+            <div className="footer-right">
+              <span>made with</span>
+              <Tooltip.Root>
+                <Tooltip.Trigger render={<span />} className="footer-emoji">
+                  🤖
+                </Tooltip.Trigger>
+                <Tooltip.Portal container={portalContainer}>
+                  <Tooltip.Positioner sideOffset={6}>
+                    <Tooltip.Popup className="tooltip-popup">Claude</Tooltip.Popup>
+                  </Tooltip.Positioner>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+              <span>by</span>
+              <a href="https://drenther.xyz" target="_blank" rel="noopener noreferrer">
+                Soumyajit Pathak
+              </a>
+            </div>
           </footer>
         </div>
       </div>

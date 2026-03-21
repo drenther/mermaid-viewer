@@ -589,13 +589,24 @@ body {
   min-height: var(--footer-h);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  justify-content: space-between;
   padding: 0 16px;
   border-top: 1px solid var(--border);
   font-size: 11px;
   color: var(--muted);
   background: var(--surface);
+}
+
+.footer-left,
+.footer-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.footer-emoji {
+  cursor: default;
+  line-height: 1;
 }
 
 .app-footer a {
@@ -606,10 +617,6 @@ body {
 
 .app-footer a:hover {
   text-decoration: underline;
-}
-
-.footer-dot {
-  opacity: 0.4;
 }
 
 /* ===== RESPONSIVE (stacked on mobile) ===== */
