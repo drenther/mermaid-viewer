@@ -288,7 +288,7 @@ function App() {
                   <rect x="14" y="14" width="7" height="7" rx="1.5" opacity="0.3" />
                 </svg>
               </div>
-              <h1>Beautiful Mermaid</h1>
+              <h1>Mermaid Viewer</h1>
             </div>
             <div className="header-controls">
               <ToggleGroup
