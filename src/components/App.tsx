@@ -7,6 +7,8 @@ import { Tooltip } from "@base-ui/react/tooltip";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { MermaidEditor } from "./MermaidEditor";
 import { SvgViewer } from "./SvgViewer";
+import { SaveDiagramDialog } from "./SaveDiagramDialog";
+import { DiagramLibraryDialog } from "./DiagramLibraryDialog";
 import { layoutStore } from "../stores/layoutStore";
 import { motion, AnimatePresence } from "motion/react";
 import "../styles/app.css";
@@ -475,6 +477,8 @@ function App() {
                         </Tooltip.Positioner>
                       </Tooltip.Portal>
                     </Tooltip.Root>
+                    <SaveDiagramDialog code={code} portalContainer={portalContainer} />
+                    <DiagramLibraryDialog onLoad={setCode} portalContainer={portalContainer} />
                     <input
                       ref={fileInputRef}
                       type="file"
