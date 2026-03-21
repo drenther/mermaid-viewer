@@ -8,8 +8,15 @@
 - **Styling**: Plain CSS (no Tailwind, no CSS-in-JS)
 - **Editor**: CodeMirror 6 with custom Mermaid syntax highlighting
 - **Renderer**: `beautiful-mermaid` (SVG + ASCII)
+- **State management**: `@xstate/store` (`createStore` from `@xstate/store`, React hooks from `@xstate/store/react`)
 
 ## Conventions
+
+### State management
+
+- Use `@xstate/store` for everything — `createStore` from `@xstate/store`, React hooks (`useStore`, `useSelector`) from `@xstate/store/react`, persistence from `@xstate/store/persist`
+- Do **not** use `@xstate/store-react` — planned migration when it re-exports `persist`
+- Use `useStore()` hook for local component stores (like `useReducer`), not manual `useRef`-based initialization
 
 ### Commits
 
@@ -33,6 +40,7 @@ src/
 ├── components/   # React components (App, MermaidEditor, SvgViewer)
 ├── layouts/      # Astro layouts (HTML shell, SEO, fonts)
 ├── pages/        # Astro pages (routes)
+├── stores/       # XState stores (layoutStore)
 └── styles/       # Global CSS
 public/           # Static assets (favicon)
 ```
