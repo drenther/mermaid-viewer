@@ -199,20 +199,11 @@ body {
 }
 
 .editor-panel {
-  flex: 0 0 auto;
   min-width: 0;
 }
 
 .preview-panel {
-  flex: 0 0 auto;
   min-width: 0;
-}
-
-/* Resizing state — disable pointer events on panels to prevent selection/interaction during drag */
-.app-main.resizing .editor-panel,
-.app-main.resizing .preview-panel {
-  pointer-events: none;
-  user-select: none;
 }
 
 /* Panel Tabs */
@@ -318,19 +309,18 @@ body {
   overflow: hidden;
 }
 
-/* Gutter (draggable) */
-.gutter {
-  width: 5px;
+/* Resize handle (between editor and preview) */
+.resize-handle {
   flex-shrink: 0;
-  cursor: col-resize;
+  width: 5px;
   background: var(--border);
-  position: relative;
-  z-index: 2;
+  cursor: col-resize;
   transition: background var(--transition);
   touch-action: none;
+  position: relative;
 }
 
-.gutter::after {
+.resize-handle::before {
   content: "";
   position: absolute;
   top: 0;
@@ -339,8 +329,8 @@ body {
   right: -3px;
 }
 
-.gutter:hover,
-.app-main.resizing .gutter {
+.resize-handle:hover,
+.resize-handle[data-separator="active"] {
   background: var(--accent);
 }
 
@@ -600,24 +590,17 @@ body {
   }
 
   .editor-panel {
-    flex: 0 0 45% !important;
-    max-height: 45%;
     border-bottom: 1px solid var(--border);
   }
 
-  .preview-panel {
-    flex: 1 1 auto !important;
-  }
-
-  .gutter {
+  .resize-handle {
     width: 100%;
     height: 3px;
     cursor: default;
     pointer-events: none;
   }
 
-  .gutter:hover,
-  .app-main.resizing .gutter {
+  .resize-handle:hover {
     background: var(--border);
   }
 
