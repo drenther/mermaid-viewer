@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
 import { renderMermaidSVG, renderMermaidASCII, THEMES } from "beautiful-mermaid";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Toggle } from "@base-ui/react/toggle";
@@ -21,6 +21,15 @@ const SAMPLE_DIAGRAM = `graph TD
 type ThemeName = "github-light" | "github-dark";
 type Renderer = "svg" | "ascii";
 
+const MOBILE_QUERY = "(max-width: 768px)";
+const subscribe = (cb: () => void) => {
+  const mql = window.matchMedia(MOBILE_QUERY);
+  mql.addEventListener("change", cb);
+  return () => mql.removeEventListener("change", cb);
+};
+const getSnapshot = () => window.matchMedia(MOBILE_QUERY).matches;
+const getServerSnapshot = () => false;
+
 function App() {
   const [code, setCode] = useState(SAMPLE_DIAGRAM);
   const [theme, setTheme] = useState<ThemeName>("github-dark");
@@ -33,6 +42,7 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const appRootRef = useRef<HTMLDivElement>(null);
 
+  const isMobile = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const themeColors = THEMES[theme];
   const isDark = theme === "github-dark";
 
@@ -332,16 +342,18 @@ function App() {
 
           <main className="app-main">
             <Group
-              orientation="horizontal"
+              orientation={isMobile ? "vertical" : "horizontal"}
               onLayoutChanged={(layout) => {
-                layoutStore.trigger.setEditorSize({ size: layout["editor"] });
+                if (!isMobile) {
+                  layoutStore.trigger.setEditorSize({ size: layout["editor"] });
+                }
               }}
             >
               <Panel
                 id="editor"
                 className="panel editor-panel"
-                defaultSize={`${layoutStore.getSnapshot().context.editorSize}%`}
-                minSize="200px"
+                defaultSize={isMobile ? "50%" : `${layoutStore.getSnapshot().context.editorSize}%`}
+                minSize={isMobile ? "100px" : "200px"}
               >
                 <div className="panel-tab">
                   <svg
@@ -444,7 +456,11 @@ function App() {
 
               <Separator className="resize-handle" />
 
-              <Panel id="preview" className="panel preview-panel" minSize="200px">
+              <Panel
+                id="preview"
+                className="panel preview-panel"
+                minSize={isMobile ? "100px" : "200px"}
+              >
                 <div className="panel-tab">
                   <svg
                     width="11"
