@@ -9,6 +9,7 @@ import { MermaidEditor } from "./MermaidEditor";
 import { SvgViewer } from "./SvgViewer";
 import { SaveDiagramDialog } from "./SaveDiagramDialog";
 import { DiagramLibraryDialog } from "./DiagramLibraryDialog";
+import { PwaToast } from "./PwaToast";
 import { layoutStore } from "../stores/layoutStore";
 import { motion, AnimatePresence } from "motion/react";
 import "../styles/app.css";
@@ -850,6 +851,7 @@ function App() {
           </footer>
         </div>
       </div>
+      <PwaToast />
     </Tooltip.Provider>
   );
 }

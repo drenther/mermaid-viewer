@@ -1,4 +1,6 @@
 ---
+import { pwaInfo } from 'virtual:pwa-info'
+
 interface Props {
   title?: string
   description?: string
@@ -19,7 +21,9 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
 
     <!-- SEO -->
     <title>{title}</title>
@@ -41,6 +45,12 @@ const {
 
     <!-- Theme Color -->
     <meta name="theme-color" content="#0d1117" />
+
+    <!-- PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Mermaid Viewer" />
+    { pwaInfo && <Fragment set:html={pwaInfo.webManifest.linkTag} /> }
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

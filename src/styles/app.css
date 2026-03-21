@@ -619,6 +619,67 @@ body {
   text-decoration: underline;
 }
 
+/* ===== PWA TOAST ===== */
+.pwa-toast {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  font-size: 12px;
+  color: var(--fg, #e6edf3);
+}
+
+.pwa-toast-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pwa-toast-reload {
+  padding: 4px 10px;
+  background: var(--accent, #4493f8);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter var(--transition);
+}
+
+.pwa-toast-reload:hover {
+  filter: brightness(1.1);
+}
+
+.pwa-toast-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--muted, #9198a1);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color var(--transition);
+}
+
+.pwa-toast-close:hover {
+  color: var(--fg, #e6edf3);
+}
+
 /* ===== DIALOG ===== */
 .dialog-backdrop {
   position: fixed;
