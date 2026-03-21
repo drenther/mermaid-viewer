@@ -292,224 +292,96 @@ function App() {
           } as React.CSSProperties
         }
       >
-        <header className="app-header">
-          <div className="header-left">
-            <div className="logo-mark">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="3" width="7" height="7" rx="1.5" opacity="0.6" />
-                <rect x="3" y="14" width="7" height="7" rx="1.5" opacity="0.6" />
-                <rect x="14" y="14" width="7" height="7" rx="1.5" opacity="0.3" />
-              </svg>
-            </div>
-            <h1>Beautiful Mermaid</h1>
-          </div>
-          <div className="header-controls">
-            <ToggleGroup
-              value={[theme]}
-              onValueChange={(val) => {
-                if (val.length) setTheme(val[val.length - 1] as ThemeName);
-              }}
-              className="toggle-group"
-              aria-label="Theme"
-            >
-              <Toggle value="github-light" className="toggle-btn" aria-label="Light theme">
+        <div className="app-layout">
+          <header className="app-header">
+            <div className="header-left">
+              <div className="logo-mark">
                 <svg
-                  width="13"
-                  height="13"
+                  width="18"
+                  height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
+                  stroke="var(--accent)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  <circle cx="12" cy="12" r="5" />
-                  <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" opacity="0.6" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" opacity="0.6" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" opacity="0.3" />
                 </svg>
-                Light
-              </Toggle>
-              <Toggle value="github-dark" className="toggle-btn" aria-label="Dark theme">
-                <svg
-                  width="13"
-                  height="13"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-                Dark
-              </Toggle>
-            </ToggleGroup>
-          </div>
-        </header>
-
-        <main className={`app-main${isResizing ? " resizing" : ""}`} ref={mainRef}>
-          <div
-            className="panel editor-panel"
-            style={{ flexBasis: `calc(${editorFraction * 100}% - 2.5px)` }}
-          >
-            <div className="panel-tab">
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-              >
-                <polyline points="16 18 22 12 16 6" />
-                <polyline points="8 6 2 12 8 18" />
-              </svg>
-              <span>Editor</span>
-
-              <div className="panel-tab-actions">
-                <Tooltip.Root>
-                  <Tooltip.Trigger
-                    className="icon-btn"
-                    onClick={handleCopyCode}
-                    disabled={!code}
-                    aria-label="Copy source"
-                  >
-                    {codeCopied ? (
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="var(--accent)"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    ) : (
-                      <svg
-                        width="13"
-                        height="13"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
-                    )}
-                  </Tooltip.Trigger>
-                  <Tooltip.Portal container={portalContainer}>
-                    <Tooltip.Positioner sideOffset={6}>
-                      <Tooltip.Popup className="tooltip-popup">Copy source</Tooltip.Popup>
-                    </Tooltip.Positioner>
-                  </Tooltip.Portal>
-                </Tooltip.Root>
-
-                <Tooltip.Root>
-                  <Tooltip.Trigger
-                    className="icon-btn"
-                    onClick={handleImport}
-                    aria-label="Import .mmd file"
-                  >
-                    <svg
-                      width="13"
-                      height="13"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="17 8 12 3 7 8" />
-                      <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
-                  </Tooltip.Trigger>
-                  <Tooltip.Portal container={portalContainer}>
-                    <Tooltip.Positioner sideOffset={6}>
-                      <Tooltip.Popup className="tooltip-popup">Import .mmd file</Tooltip.Popup>
-                    </Tooltip.Positioner>
-                  </Tooltip.Portal>
-                </Tooltip.Root>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".mmd,.mermaid,.txt,.md"
-                  style={{ display: "none" }}
-                  onChange={handleFileChange}
-                />
               </div>
+              <h1>Beautiful Mermaid</h1>
             </div>
-            <div className="panel-content editor-content">
-              <MermaidEditor value={code} onChange={setCode} isDark={isDark} />
-            </div>
-          </div>
-
-          <div
-            className="gutter"
-            onPointerDown={handleGutterPointerDown}
-            onPointerMove={handleGutterPointerMove}
-            onPointerUp={handleGutterPointerUp}
-            onPointerCancel={handleGutterPointerUp}
-          />
-
-          <div
-            className="panel preview-panel"
-            style={{ flexBasis: `calc(${(1 - editorFraction) * 100}% - 2.5px)` }}
-          >
-            <div className="panel-tab">
-              <svg
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
+            <div className="header-controls">
+              <ToggleGroup
+                value={[theme]}
+                onValueChange={(val) => {
+                  if (val.length) setTheme(val[val.length - 1] as ThemeName);
+                }}
+                className="toggle-group"
+                aria-label="Theme"
               >
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
-              <span>Preview</span>
+                <Toggle value="github-light" className="toggle-btn" aria-label="Light theme">
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <circle cx="12" cy="12" r="5" />
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                  </svg>
+                  Light
+                </Toggle>
+                <Toggle value="github-dark" className="toggle-btn" aria-label="Dark theme">
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                  </svg>
+                  Dark
+                </Toggle>
+              </ToggleGroup>
+            </div>
+          </header>
 
-              <div className="panel-tab-actions">
-                <ToggleGroup
-                  value={[renderer]}
-                  onValueChange={(val) => {
-                    if (val.length) setRenderer(val[val.length - 1] as Renderer);
-                  }}
-                  className="toggle-group"
-                  aria-label="Renderer"
+          <main className={`app-main${isResizing ? " resizing" : ""}`} ref={mainRef}>
+            <div
+              className="panel editor-panel"
+              style={{ flexBasis: `calc(${editorFraction * 100}% - 2.5px)` }}
+            >
+              <div className="panel-tab">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
                 >
-                  <Toggle value="svg" className="toggle-btn" aria-label="SVG renderer">
-                    SVG
-                  </Toggle>
-                  <Toggle value="ascii" className="toggle-btn" aria-label="ASCII renderer">
-                    ASCII
-                  </Toggle>
-                </ToggleGroup>
+                  <polyline points="16 18 22 12 16 6" />
+                  <polyline points="8 6 2 12 8 18" />
+                </svg>
+                <span>Editor</span>
 
-                {renderer === "svg" ? (
+                <div className="panel-tab-actions">
                   <Tooltip.Root>
                     <Tooltip.Trigger
                       className="icon-btn"
-                      onClick={handleExportSVG}
-                      disabled={!svgOutput}
-                      aria-label="Copy SVG code"
+                      onClick={handleCopyCode}
+                      disabled={!code}
+                      aria-label="Copy source"
                     >
-                      {svgCopied ? (
+                      {codeCopied ? (
                         <svg
                           width="13"
                           height="13"
@@ -540,62 +412,16 @@ function App() {
                     </Tooltip.Trigger>
                     <Tooltip.Portal container={portalContainer}>
                       <Tooltip.Positioner sideOffset={6}>
-                        <Tooltip.Popup className="tooltip-popup">Copy SVG code</Tooltip.Popup>
+                        <Tooltip.Popup className="tooltip-popup">Copy source</Tooltip.Popup>
                       </Tooltip.Positioner>
                     </Tooltip.Portal>
                   </Tooltip.Root>
-                ) : (
+
                   <Tooltip.Root>
                     <Tooltip.Trigger
                       className="icon-btn"
-                      onClick={handleCopyASCII}
-                      disabled={!asciiOutput}
-                      aria-label="Copy ASCII"
-                    >
-                      {copied ? (
-                        <svg
-                          width="13"
-                          height="13"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="var(--accent)"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      ) : (
-                        <svg
-                          width="13"
-                          height="13"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                        </svg>
-                      )}
-                    </Tooltip.Trigger>
-                    <Tooltip.Portal container={portalContainer}>
-                      <Tooltip.Positioner sideOffset={6}>
-                        <Tooltip.Popup className="tooltip-popup">Copy ASCII</Tooltip.Popup>
-                      </Tooltip.Positioner>
-                    </Tooltip.Portal>
-                  </Tooltip.Root>
-                )}
-
-                <Tooltip.Root>
-                  <Menu.Root>
-                    <Tooltip.Trigger
-                      render={<Menu.Trigger />}
-                      className="icon-btn"
-                      disabled={!svgOutput}
-                      aria-label="Download diagram"
+                      onClick={handleImport}
+                      aria-label="Import .mmd file"
                     >
                       <svg
                         width="13"
@@ -608,99 +434,275 @@ function App() {
                         strokeLinejoin="round"
                       >
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="7 10 12 15 17 10" />
-                        <line x1="12" y1="15" x2="12" y2="3" />
+                        <polyline points="17 8 12 3 7 8" />
+                        <line x1="12" y1="3" x2="12" y2="15" />
                       </svg>
                     </Tooltip.Trigger>
                     <Tooltip.Portal container={portalContainer}>
                       <Tooltip.Positioner sideOffset={6}>
-                        <Tooltip.Popup className="tooltip-popup">Download diagram</Tooltip.Popup>
+                        <Tooltip.Popup className="tooltip-popup">Import .mmd file</Tooltip.Popup>
                       </Tooltip.Positioner>
                     </Tooltip.Portal>
-                    <Menu.Portal container={portalContainer}>
-                      <Menu.Positioner side="bottom" align="end" sideOffset={4}>
-                        <Menu.Popup className="dropdown-menu">
-                          <Menu.Item className="dropdown-menu-item" onClick={handleDownloadSVG}>
-                            Download SVG
-                          </Menu.Item>
-                          <Menu.Item className="dropdown-menu-item" onClick={handleDownloadPNG}>
-                            Download PNG
-                          </Menu.Item>
-                        </Menu.Popup>
-                      </Menu.Positioner>
-                    </Menu.Portal>
-                  </Menu.Root>
-                </Tooltip.Root>
+                  </Tooltip.Root>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".mmd,.mermaid,.txt,.md"
+                    style={{ display: "none" }}
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </div>
+              <div className="panel-content editor-content">
+                <MermaidEditor value={code} onChange={setCode} isDark={isDark} />
               </div>
             </div>
-            <div className="panel-content preview-content">
-              {error ? (
-                <div className="error-box">
-                  <div className="error-icon">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-                      <line x1="12" y1="9" x2="12" y2="13" />
-                      <line x1="12" y1="17" x2="12.01" y2="17" />
-                    </svg>
-                  </div>
-                  <pre className="error-text">{error}</pre>
-                </div>
-              ) : renderer === "ascii" && asciiUnsupported ? (
-                <div className="ascii-fallback">
-                  <div className="fallback-notice">
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--muted)"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="16" x2="12" y2="12" />
-                      <line x1="12" y1="8" x2="12.01" y2="8" />
-                    </svg>
-                    <span>
-                      ASCII rendering doesn't support this diagram (nested subgraphs, complex
-                      edges). Showing SVG instead.
-                    </span>
-                    <button className="fallback-switch-btn" onClick={() => setRenderer("svg")}>
-                      Switch to SVG
-                    </button>
-                  </div>
-                  <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
-                </div>
-              ) : renderer === "svg" ? (
-                <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
-              ) : (
-                <pre
-                  className="ascii-container"
-                  // svgHtml/asciiOutput is trusted output from beautiful-mermaid's renderer,
-                  // not arbitrary user HTML.
-                  dangerouslySetInnerHTML={{
-                    __html: asciiOutput || "Type a diagram to see ASCII output\u2026",
-                  }}
-                />
-              )}
-            </div>
-          </div>
-        </main>
 
-        <footer className="app-footer">
-          <span>Powered by</span>
-          <a href="https://agents.craft.do/mermaid" target="_blank" rel="noopener noreferrer">
-            beautiful-mermaid
-          </a>
-        </footer>
+            <div
+              className="gutter"
+              onPointerDown={handleGutterPointerDown}
+              onPointerMove={handleGutterPointerMove}
+              onPointerUp={handleGutterPointerUp}
+              onPointerCancel={handleGutterPointerUp}
+            />
+
+            <div
+              className="panel preview-panel"
+              style={{ flexBasis: `calc(${(1 - editorFraction) * 100}% - 2.5px)` }}
+            >
+              <div className="panel-tab">
+                <svg
+                  width="11"
+                  height="11"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <polyline points="21 15 16 10 5 21" />
+                </svg>
+                <span>Preview</span>
+
+                <div className="panel-tab-actions">
+                  <ToggleGroup
+                    value={[renderer]}
+                    onValueChange={(val) => {
+                      if (val.length) setRenderer(val[val.length - 1] as Renderer);
+                    }}
+                    className="toggle-group"
+                    aria-label="Renderer"
+                  >
+                    <Toggle value="svg" className="toggle-btn" aria-label="SVG renderer">
+                      SVG
+                    </Toggle>
+                    <Toggle value="ascii" className="toggle-btn" aria-label="ASCII renderer">
+                      ASCII
+                    </Toggle>
+                  </ToggleGroup>
+
+                  {renderer === "svg" ? (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger
+                        className="icon-btn"
+                        onClick={handleExportSVG}
+                        disabled={!svgOutput}
+                        aria-label="Copy SVG code"
+                      >
+                        {svgCopied ? (
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="var(--accent)"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        )}
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal container={portalContainer}>
+                        <Tooltip.Positioner sideOffset={6}>
+                          <Tooltip.Popup className="tooltip-popup">Copy SVG code</Tooltip.Popup>
+                        </Tooltip.Positioner>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+                  ) : (
+                    <Tooltip.Root>
+                      <Tooltip.Trigger
+                        className="icon-btn"
+                        onClick={handleCopyASCII}
+                        disabled={!asciiOutput}
+                        aria-label="Copy ASCII"
+                      >
+                        {copied ? (
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="var(--accent)"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg
+                            width="13"
+                            height="13"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        )}
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal container={portalContainer}>
+                        <Tooltip.Positioner sideOffset={6}>
+                          <Tooltip.Popup className="tooltip-popup">Copy ASCII</Tooltip.Popup>
+                        </Tooltip.Positioner>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+                  )}
+
+                  <Tooltip.Root>
+                    <Menu.Root>
+                      <Tooltip.Trigger
+                        render={<Menu.Trigger />}
+                        className="icon-btn"
+                        disabled={!svgOutput}
+                        aria-label="Download diagram"
+                      >
+                        <svg
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal container={portalContainer}>
+                        <Tooltip.Positioner sideOffset={6}>
+                          <Tooltip.Popup className="tooltip-popup">Download diagram</Tooltip.Popup>
+                        </Tooltip.Positioner>
+                      </Tooltip.Portal>
+                      <Menu.Portal container={portalContainer}>
+                        <Menu.Positioner side="bottom" align="end" sideOffset={4}>
+                          <Menu.Popup className="dropdown-menu">
+                            <Menu.Item className="dropdown-menu-item" onClick={handleDownloadSVG}>
+                              Download SVG
+                            </Menu.Item>
+                            <Menu.Item className="dropdown-menu-item" onClick={handleDownloadPNG}>
+                              Download PNG
+                            </Menu.Item>
+                          </Menu.Popup>
+                        </Menu.Positioner>
+                      </Menu.Portal>
+                    </Menu.Root>
+                  </Tooltip.Root>
+                </div>
+              </div>
+              <div className="panel-content preview-content">
+                {error ? (
+                  <div className="error-box">
+                    <div className="error-icon">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                        <line x1="12" y1="9" x2="12" y2="13" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                    </div>
+                    <pre className="error-text">{error}</pre>
+                  </div>
+                ) : renderer === "ascii" && asciiUnsupported ? (
+                  <div className="ascii-fallback">
+                    <div className="fallback-notice">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--muted)"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="16" x2="12" y2="12" />
+                        <line x1="12" y1="8" x2="12.01" y2="8" />
+                      </svg>
+                      <span>
+                        ASCII rendering doesn't support this diagram (nested subgraphs, complex
+                        edges). Showing SVG instead.
+                      </span>
+                      <button className="fallback-switch-btn" onClick={() => setRenderer("svg")}>
+                        Switch to SVG
+                      </button>
+                    </div>
+                    <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
+                  </div>
+                ) : renderer === "svg" ? (
+                  <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
+                ) : (
+                  <pre
+                    className="ascii-container"
+                    // svgHtml/asciiOutput is trusted output from beautiful-mermaid's renderer,
+                    // not arbitrary user HTML.
+                    dangerouslySetInnerHTML={{
+                      __html: asciiOutput || "Type a diagram to see ASCII output\u2026",
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          </main>
+
+          <footer className="app-footer">
+            <span>Powered by</span>
+            <a href="https://agents.craft.do/mermaid" target="_blank" rel="noopener noreferrer">
+              beautiful-mermaid
+            </a>
+          </footer>
+        </div>
       </div>
     </Tooltip.Provider>
   );
