@@ -299,7 +299,7 @@ export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
   );
 
   const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
+    (e: WheelEvent) => {
       e.preventDefault();
       const rect = containerRef.current!.getBoundingClientRect();
       store.trigger.wheel({
@@ -310,6 +310,26 @@ export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
     },
     [store],
   );
+
+  // Attach wheel + Safari gesture listeners imperatively with { passive: false }
+  // so e.preventDefault() actually blocks browser-native zoom.
+  // React's onWheel registers as passive, making preventDefault a no-op.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    el.addEventListener("wheel", handleWheel, { passive: false });
+
+    const prevent = (e: Event) => e.preventDefault();
+    el.addEventListener("gesturestart", prevent, { passive: false });
+    el.addEventListener("gesturechange", prevent, { passive: false });
+
+    return () => {
+      el.removeEventListener("wheel", handleWheel);
+      el.removeEventListener("gesturestart", prevent);
+      el.removeEventListener("gesturechange", prevent);
+    };
+  }, [handleWheel, svgHtml]);
 
   const fitToView = useCallback(() => {
     if (!containerRef.current || !contentRef.current) return;
@@ -342,7 +362,6 @@ export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
     <div
       ref={containerRef}
       className="svg-viewer"
-      onWheel={handleWheel}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
