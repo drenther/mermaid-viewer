@@ -3,6 +3,6 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "jsxImportSource": "react",
-    "types": ["vite-plugin-pwa/react", "vite-plugin-pwa/info"]
+    "types": ["vite-plugin-pwa/react", "vite-plugin-pwa/info", "vite-plugin-comlink/client"]
   }
 }

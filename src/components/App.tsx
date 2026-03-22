@@ -5,14 +5,20 @@ import { Toggle } from "@base-ui/react/toggle";
 import { Menu } from "@base-ui/react/menu";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { Group, Panel, Separator } from "react-resizable-panels";
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { MermaidEditor } from "./MermaidEditor";
 import { SvgViewer } from "./SvgViewer";
 import { SaveDiagramDialog } from "./SaveDiagramDialog";
 import { DiagramLibraryDialog } from "./DiagramLibraryDialog";
 import { PwaToast } from "./PwaToast";
 import { layoutStore } from "../stores/layoutStore";
+import { loadDiagramFromUrl, buildShareUrl } from "../lib/shareUrl";
 import { motion, AnimatePresence } from "motion/react";
 import "../styles/app.css";
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
+});
 
 const SAMPLE_DIAGRAM = `graph TD
   A[Start] --> B{Decision}
@@ -34,8 +40,10 @@ const subscribe = (cb: () => void) => {
 const getSnapshot = () => window.matchMedia(MOBILE_QUERY).matches;
 const getServerSnapshot = () => false;
 
-function App() {
-  const [code, setCode] = useState(SAMPLE_DIAGRAM);
+const hashPresent = window.location.hash.startsWith("#code/");
+
+function AppInner() {
+  const [code, setCode] = useState(hashPresent ? "" : SAMPLE_DIAGRAM);
   const [theme, setTheme] = useState<ThemeName>("github-dark");
   const [renderer, setRenderer] = useState<Renderer>("svg");
   const [error, setError] = useState<string | null>(null);
@@ -43,12 +51,26 @@ function App() {
   const [svgOutput, setSvgOutput] = useState<string>("");
   const [asciiOutput, setAsciiOutput] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const appRootRef = useRef<HTMLDivElement>(null);
 
   const isMobile = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const themeColors = THEMES[theme];
   const isDark = theme === "github-dark";
+
+  const { data: sharedDiagram } = useQuery({
+    queryKey: ["shared-diagram"],
+    queryFn: loadDiagramFromUrl,
+    enabled: hashPresent,
+    staleTime: Infinity,
+  });
+
+  const sharedDiagramApplied = useRef(false);
+  if (sharedDiagram && !sharedDiagramApplied.current) {
+    sharedDiagramApplied.current = true;
+    setCode(sharedDiagram);
+  }
 
   const renderDiagram = useCallback(
     (source: string, currentRenderer: Renderer, currentTheme: ThemeName) => {
@@ -144,6 +166,33 @@ function App() {
           setTimeout(() => setCodeCopied(false), 2000);
         })
         .catch(() => {});
+    }
+  }, [code]);
+
+  const handleShare = useCallback(async () => {
+    if (!code.trim()) return;
+    try {
+      const url = await buildShareUrl(code);
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = url;
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        textarea.style.top = "-9999px";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      } catch {
+        await navigator.clipboard?.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      // Compression failed — silently ignore
     }
   }, [code]);
 
@@ -447,6 +496,71 @@ function App() {
                       <Tooltip.Portal container={portalContainer}>
                         <Tooltip.Positioner sideOffset={6}>
                           <Tooltip.Popup className="tooltip-popup">Copy source</Tooltip.Popup>
+                        </Tooltip.Positioner>
+                      </Tooltip.Portal>
+                    </Tooltip.Root>
+
+                    <Tooltip.Root>
+                      <Tooltip.Trigger
+                        className="icon-btn"
+                        onClick={handleShare}
+                        disabled={!code.trim()}
+                        aria-label="Share via URL"
+                      >
+                        <AnimatePresence mode="wait" initial={false}>
+                          {shareCopied ? (
+                            <motion.span
+                              key="check"
+                              initial={{ opacity: 0, scale: 0.5 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.5 }}
+                              transition={{ duration: 0.2 }}
+                              style={{ display: "flex" }}
+                            >
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="var(--accent)"
+                                strokeWidth="2.5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </motion.span>
+                          ) : (
+                            <motion.span
+                              key="share"
+                              initial={{ opacity: 0, scale: 0.5 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.5 }}
+                              transition={{ duration: 0.2 }}
+                              style={{ display: "flex" }}
+                            >
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                              </svg>
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
+                      </Tooltip.Trigger>
+                      <Tooltip.Portal container={portalContainer}>
+                        <Tooltip.Positioner sideOffset={6}>
+                          <Tooltip.Popup className="tooltip-popup">
+                            {shareCopied ? "Link copied!" : "Share via URL"}
+                          </Tooltip.Popup>
                         </Tooltip.Positioner>
                       </Tooltip.Portal>
                     </Tooltip.Root>
@@ -853,6 +967,14 @@ function App() {
       </div>
       <PwaToast />
     </Tooltip.Provider>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppInner />
+    </QueryClientProvider>
   );
 }
 

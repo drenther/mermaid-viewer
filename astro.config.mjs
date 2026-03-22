@@ -1,8 +1,15 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import AstroPWA from '@vite-pwa/astro';
+import comlink from 'vite-plugin-comlink';
 
 export default defineConfig({
+  vite: {
+    plugins: [comlink()],
+    worker: {
+      plugins: () => [comlink()],
+    },
+  },
   integrations: [
     react(),
     AstroPWA({
