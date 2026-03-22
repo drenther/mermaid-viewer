@@ -1,4 +1,4 @@
-import { setup, assign, fromPromise, sendTo, type ActorRefFrom } from "xstate";
+import { setup, assign, fromPromise, fromCallback, sendTo, type ActorRefFrom } from "xstate";
 import { renderMermaidSVG, renderMermaidASCII, THEMES } from "beautiful-mermaid";
 import { loadDiagramFromUrl, buildShareUrl } from "../lib/shareUrl";
 import { copyToClipboard } from "../lib/clipboard";
@@ -114,11 +114,21 @@ export const appMachine = setup({
       | { type: "copyCode" }
       | { type: "copySvg" }
       | { type: "copyAscii" }
-      | { type: "share" },
+      | { type: "share" }
+      | { type: "hashChanged" },
   },
   actors: {
     loadFromUrl: fromPromise<string | null, void>(async () => {
       return loadDiagramFromUrl();
+    }),
+    hashWatcher: fromCallback(({ sendBack }) => {
+      const handler = () => {
+        if (window.location.hash.startsWith("#code/")) {
+          sendBack({ type: "hashChanged" });
+        }
+      };
+      window.addEventListener("hashchange", handler);
+      return () => window.removeEventListener("hashchange", handler);
     }),
     copyMachine,
   },
@@ -242,6 +252,9 @@ export const appMachine = setup({
       },
     },
     ready: {
+      invoke: {
+        src: "hashWatcher",
+      },
       initial: "debouncing",
       states: {
         debouncing: {
@@ -253,8 +266,23 @@ export const appMachine = setup({
           },
         },
         idle: {},
+        loadingFromHash: {
+          invoke: {
+            src: "loadFromUrl",
+            onDone: [
+              {
+                guard: ({ event }) => event.output != null,
+                target: "debouncing",
+                actions: assign({ code: ({ event }) => event.output! }),
+              },
+              { target: "idle" },
+            ],
+            onError: "idle",
+          },
+        },
       },
       on: {
+        hashChanged: { target: ".loadingFromHash" },
         setCode: {
           actions: assign({ code: ({ event }) => event.code }),
           target: ".debouncing",
