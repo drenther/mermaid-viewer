@@ -1,35 +1,20 @@
-import React, { useState, useCallback, useRef, useEffect, useSyncExternalStore } from "react";
-import { renderMermaidSVG, renderMermaidASCII, THEMES } from "beautiful-mermaid";
+import React, { useRef, useSyncExternalStore } from "react";
+import { THEMES } from "beautiful-mermaid";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Toggle } from "@base-ui/react/toggle";
 import { Menu } from "@base-ui/react/menu";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { Group, Panel, Separator } from "react-resizable-panels";
-import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+import { useActor, useSelector } from "@xstate/react";
 import { MermaidEditor } from "./MermaidEditor";
 import { SvgViewer } from "./SvgViewer";
 import { SaveDiagramDialog } from "./SaveDiagramDialog";
 import { DiagramLibraryDialog } from "./DiagramLibraryDialog";
 import { PwaToast } from "./PwaToast";
 import { layoutStore } from "../stores/layoutStore";
-import { loadDiagramFromUrl, buildShareUrl } from "../lib/shareUrl";
+import { appMachine, type ThemeName, type Renderer, type CopyActorRef } from "../stores/appMachine";
 import { motion, AnimatePresence } from "motion/react";
 import "../styles/app.css";
-
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
-});
-
-const SAMPLE_DIAGRAM = `graph TD
-  A[Start] --> B{Decision}
-  B -->|Yes| C[Process A]
-  B -->|No| D[Process B]
-  C --> E[Merge]
-  D --> E
-  E --> F((End))`;
-
-type ThemeName = "github-light" | "github-dark";
-type Renderer = "svg" | "ascii";
 
 const MOBILE_QUERY = "(max-width: 768px)";
 const subscribe = (cb: () => void) => {
@@ -40,217 +25,53 @@ const subscribe = (cb: () => void) => {
 const getSnapshot = () => window.matchMedia(MOBILE_QUERY).matches;
 const getServerSnapshot = () => false;
 
-const hashPresent = window.location.hash.startsWith("#code/");
+const selectCopied = (s: { context: { copied: boolean } }) => s.context.copied;
 
-function AppInner() {
-  const [code, setCode] = useState(hashPresent ? "" : SAMPLE_DIAGRAM);
-  const [theme, setTheme] = useState<ThemeName>("github-dark");
-  const [renderer, setRenderer] = useState<Renderer>("svg");
-  const [error, setError] = useState<string | null>(null);
-  const [asciiUnsupported, setAsciiUnsupported] = useState(false);
-  const [svgOutput, setSvgOutput] = useState<string>("");
-  const [asciiOutput, setAsciiOutput] = useState<string>("");
-  const [copied, setCopied] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
+function useCopied(ref: CopyActorRef): boolean {
+  return useSelector(ref, selectCopied);
+}
+
+function App() {
+  const [snapshot, send] = useActor(appMachine);
+  const {
+    code,
+    theme,
+    renderer,
+    svgOutput,
+    asciiOutput,
+    error,
+    asciiUnsupported,
+    codeCopyRef,
+    svgCopyRef,
+    asciiCopyRef,
+    shareCopyRef,
+  } = snapshot.context;
+
+  const codeCopied = useCopied(codeCopyRef);
+  const svgCopied = useCopied(svgCopyRef);
+  const asciiCopied = useCopied(asciiCopyRef);
+  const shareCopied = useCopied(shareCopyRef);
+
+  const isMobile = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const isDark = theme === "github-dark";
+  const themeColors = THEMES[theme];
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const appRootRef = useRef<HTMLDivElement>(null);
 
-  const isMobile = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const themeColors = THEMES[theme];
-  const isDark = theme === "github-dark";
-
-  const { data: sharedDiagram } = useQuery({
-    queryKey: ["shared-diagram"],
-    queryFn: loadDiagramFromUrl,
-    enabled: hashPresent,
-    staleTime: Infinity,
-  });
-
-  const sharedDiagramApplied = useRef(false);
-  if (sharedDiagram && !sharedDiagramApplied.current) {
-    sharedDiagramApplied.current = true;
-    setCode(sharedDiagram);
-  }
-
-  const renderDiagram = useCallback(
-    (source: string, currentRenderer: Renderer, currentTheme: ThemeName) => {
-      const trimmed = source.trim();
-      if (!trimmed) {
-        setSvgOutput("");
-        setAsciiOutput("");
-        setError(null);
-        return;
-      }
-
-      try {
-        // Always render SVG (it's the reliable renderer)
-        const svg = renderMermaidSVG(trimmed, {
-          ...THEMES[currentTheme],
-          transparent: true,
-        });
-        setSvgOutput(svg);
-
-        if (currentRenderer === "svg") {
-          setError(null);
-          setAsciiUnsupported(false);
-        } else {
-          // Try ASCII — may fail on complex diagrams (nested subgraphs, etc.)
-          try {
-            const ascii = renderMermaidASCII(trimmed, {
-              colorMode: "html",
-              theme: THEMES[currentTheme],
-            });
-            setAsciiOutput(ascii);
-            setError(null);
-            setAsciiUnsupported(false);
-          } catch {
-            setAsciiOutput("");
-            setAsciiUnsupported(true);
-            setError(null);
-          }
-        }
-      } catch (err: any) {
-        setError(err?.message || "Failed to render diagram");
-        setAsciiUnsupported(false);
-      }
-    },
-    [],
-  );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      renderDiagram(code, renderer, theme);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [code, renderer, theme, renderDiagram]);
-
-  const handleImport = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      if (text) setCode(text);
+      if (text) send({ type: "importFile", text });
     };
     reader.readAsText(file);
     e.target.value = "";
-  }, []);
+  };
 
-  const [codeCopied, setCodeCopied] = useState(false);
-  const [svgCopied, setSvgCopied] = useState(false);
-
-  const handleCopyCode = useCallback(() => {
-    if (!code) return;
-    try {
-      const textarea = document.createElement("textarea");
-      textarea.value = code;
-      textarea.style.position = "fixed";
-      textarea.style.left = "-9999px";
-      textarea.style.top = "-9999px";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCodeCopied(true);
-      setTimeout(() => setCodeCopied(false), 2000);
-    } catch {
-      navigator.clipboard
-        ?.writeText(code)
-        .then(() => {
-          setCodeCopied(true);
-          setTimeout(() => setCodeCopied(false), 2000);
-        })
-        .catch(() => {});
-    }
-  }, [code]);
-
-  const handleShare = useCallback(async () => {
-    if (!code.trim()) return;
-    try {
-      const url = await buildShareUrl(code);
-      try {
-        const textarea = document.createElement("textarea");
-        textarea.value = url;
-        textarea.style.position = "fixed";
-        textarea.style.left = "-9999px";
-        textarea.style.top = "-9999px";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      } catch {
-        await navigator.clipboard?.writeText(url);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      }
-    } catch {
-      // Compression failed — silently ignore
-    }
-  }, [code]);
-
-  const handleExportSVG = useCallback(() => {
-    if (!svgOutput) return;
-    try {
-      const textarea = document.createElement("textarea");
-      textarea.value = svgOutput;
-      textarea.style.position = "fixed";
-      textarea.style.left = "-9999px";
-      textarea.style.top = "-9999px";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setSvgCopied(true);
-      setTimeout(() => setSvgCopied(false), 2000);
-    } catch {
-      navigator.clipboard
-        ?.writeText(svgOutput)
-        .then(() => {
-          setSvgCopied(true);
-          setTimeout(() => setSvgCopied(false), 2000);
-        })
-        .catch(() => {});
-    }
-  }, [svgOutput]);
-
-  const handleCopyASCII = useCallback(() => {
-    if (!asciiOutput) return;
-    const plain = asciiOutput.replace(/<[^>]*>/g, "");
-    try {
-      const textarea = document.createElement("textarea");
-      textarea.value = plain;
-      textarea.style.position = "fixed";
-      textarea.style.left = "-9999px";
-      textarea.style.top = "-9999px";
-      textarea.style.opacity = "0";
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Last resort: try the async API
-      navigator.clipboard
-        ?.writeText(plain)
-        .then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        })
-        .catch(() => {});
-    }
-  }, [asciiOutput]);
-
-  const handleDownloadSVG = useCallback(() => {
+  const handleDownloadSVG = () => {
     if (!svgOutput) return;
     const blob = new Blob([svgOutput], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
@@ -261,9 +82,9 @@ function AppInner() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [svgOutput]);
+  };
 
-  const handleDownloadPNG = useCallback(() => {
+  const handleDownloadPNG = () => {
     if (!svgOutput) return;
     const svgTag = svgOutput.match(/<svg[^>]*>/);
     if (!svgTag) return;
@@ -307,7 +128,7 @@ function AppInner() {
       }, "image/png");
     };
     img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgOutput);
-  }, [svgOutput]);
+  };
 
   const portalContainer = appRootRef.current ?? undefined;
 
@@ -357,7 +178,8 @@ function AppInner() {
               <ToggleGroup
                 value={[theme]}
                 onValueChange={(val) => {
-                  if (val.length) setTheme(val[val.length - 1] as ThemeName);
+                  if (val.length)
+                    send({ type: "setTheme", theme: val[val.length - 1] as ThemeName });
                 }}
                 className="toggle-group"
                 aria-label="Theme"
@@ -440,7 +262,7 @@ function AppInner() {
                     <Tooltip.Root>
                       <Tooltip.Trigger
                         className="icon-btn"
-                        onClick={handleCopyCode}
+                        onClick={() => send({ type: "copyCode" })}
                         disabled={!code}
                         aria-label="Copy source"
                       >
@@ -503,7 +325,7 @@ function AppInner() {
                     <Tooltip.Root>
                       <Tooltip.Trigger
                         className="icon-btn"
-                        onClick={handleShare}
+                        onClick={() => send({ type: "share" })}
                         disabled={!code.trim()}
                         aria-label="Share via URL"
                       >
@@ -568,7 +390,7 @@ function AppInner() {
                     <Tooltip.Root>
                       <Tooltip.Trigger
                         className="icon-btn"
-                        onClick={handleImport}
+                        onClick={() => fileInputRef.current?.click()}
                         aria-label="Import .mmd file"
                       >
                         <svg
@@ -593,7 +415,10 @@ function AppInner() {
                       </Tooltip.Portal>
                     </Tooltip.Root>
                     <SaveDiagramDialog code={code} portalContainer={portalContainer} />
-                    <DiagramLibraryDialog onLoad={setCode} portalContainer={portalContainer} />
+                    <DiagramLibraryDialog
+                      onLoad={(c) => send({ type: "loadDiagram", code: c })}
+                      portalContainer={portalContainer}
+                    />
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -604,7 +429,11 @@ function AppInner() {
                   </div>
                 </div>
                 <div className="panel-content editor-content">
-                  <MermaidEditor value={code} onChange={setCode} isDark={isDark} />
+                  <MermaidEditor
+                    value={code}
+                    onChange={(v) => send({ type: "setCode", code: v })}
+                    isDark={isDark}
+                  />
                 </div>
               </Panel>
 
@@ -634,7 +463,11 @@ function AppInner() {
                     <ToggleGroup
                       value={[renderer]}
                       onValueChange={(val) => {
-                        if (val.length) setRenderer(val[val.length - 1] as Renderer);
+                        if (val.length)
+                          send({
+                            type: "setRenderer",
+                            renderer: val[val.length - 1] as Renderer,
+                          });
                       }}
                       className="toggle-group"
                       aria-label="Renderer"
@@ -665,7 +498,7 @@ function AppInner() {
                       <Tooltip.Root>
                         <Tooltip.Trigger
                           className="icon-btn"
-                          onClick={handleExportSVG}
+                          onClick={() => send({ type: "copySvg" })}
                           disabled={!svgOutput}
                           aria-label="Copy SVG code"
                         >
@@ -728,12 +561,12 @@ function AppInner() {
                       <Tooltip.Root>
                         <Tooltip.Trigger
                           className="icon-btn"
-                          onClick={handleCopyASCII}
+                          onClick={() => send({ type: "copyAscii" })}
                           disabled={!asciiOutput}
                           aria-label="Copy ASCII"
                         >
                           <AnimatePresence mode="wait" initial={false}>
-                            {copied ? (
+                            {asciiCopied ? (
                               <motion.span
                                 key="check"
                                 initial={{ opacity: 0, scale: 0.5 }}
@@ -895,7 +728,7 @@ function AppInner() {
                             </span>
                             <button
                               className="fallback-switch-btn"
-                              onClick={() => setRenderer("svg")}
+                              onClick={() => send({ type: "setRenderer", renderer: "svg" })}
                             >
                               Switch to SVG
                             </button>
@@ -923,7 +756,8 @@ function AppInner() {
                         transition={{ duration: 0.15 }}
                         style={{ width: "100%", height: "100%" }}
                       >
-                        {/* asciiOutput is trusted output from beautiful-mermaid's renderer */}
+                        {/* asciiOutput is trusted output from beautiful-mermaid's renderer —
+                            it is NOT arbitrary user HTML, so dangerouslySetInnerHTML is safe here */}
                         <pre
                           className="ascii-container"
                           dangerouslySetInnerHTML={{
@@ -967,14 +801,6 @@ function AppInner() {
       </div>
       <PwaToast />
     </Tooltip.Provider>
-  );
-}
-
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AppInner />
-    </QueryClientProvider>
   );
 }
 
