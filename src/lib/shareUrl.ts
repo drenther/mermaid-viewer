@@ -27,7 +27,6 @@ export async function loadDiagramFromUrl(): Promise<string | null> {
 
 export async function buildShareUrl(code: string): Promise<string> {
   const encoded = await getWorker().compress(code);
-  const newHash = HASH_PREFIX + encoded;
-  window.history.replaceState(null, "", newHash);
-  return window.location.href;
+  const { origin, pathname, search } = window.location;
+  return origin + pathname + search + HASH_PREFIX + encoded;
 }
