@@ -837,7 +837,7 @@ body {
 .diagram-list-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
   padding: 0 4px;
 }
 
@@ -873,24 +873,23 @@ body {
 .diagram-list-item-meta {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 11px;
   color: var(--muted);
 }
 
-.diagram-list-item-date {
+.diagram-list-item-badge {
   flex-shrink: 0;
-}
-
-.diagram-list-item-preview {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: "JetBrains Mono", monospace;
   font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  letter-spacing: 0.01em;
 }
 
-.diagram-list-item-delete {
+.diagram-list-item-action {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -905,7 +904,12 @@ body {
   transition: all var(--transition);
 }
 
-.diagram-list-item-delete:hover {
+.diagram-list-item-action:hover {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+
+.diagram-list-item-action-danger:hover {
   background: color-mix(in srgb, #f85149 10%, var(--surface));
   color: #f85149;
 }
