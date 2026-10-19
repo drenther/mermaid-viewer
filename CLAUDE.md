@@ -43,6 +43,8 @@ src/
 ├── stores/       # XState stores (layoutStore)
 └── styles/       # Global CSS
 public/           # Static assets (favicon)
+claude-plugin/    # Claude Code mod: links mermaid blocks to the viewer (#code/ format)
+.claude-plugin/   # marketplace.json that makes this repo installable
 ```
 
 ## Scripts

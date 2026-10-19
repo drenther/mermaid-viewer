@@ -1,0 +1,6 @@
+{
+  "name": "mermaid-viewer",
+  "owner": { "name": "drenther" },
+  "description": "Claude Code plugins for Beautiful Mermaid Viewer (mermaid.drenther.xyz)",
+  "plugins": [{ "name": "mermaid-link", "source": "./claude-plugin" }]
+}

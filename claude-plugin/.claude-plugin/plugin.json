@@ -1,0 +1,7 @@
+{
+  "name": "mermaid-link",
+  "version": "0.1.0",
+  "author": { "name": "drenther" },
+  "homepage": "https://mermaid.drenther.xyz",
+  "description": "Adds an \"Open in mermaid.drenther.xyz\" link below every mermaid diagram Claude writes"
+}

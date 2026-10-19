@@ -8,10 +8,10 @@
     "build": "astro build",
     "preview": "astro preview",
     "generate:og": "node scripts/generate-og-image.mjs",
-    "lint": "oxlint src/",
-    "lint:fix": "oxlint --fix src/",
-    "format": "oxfmt --write src/",
-    "format:check": "oxfmt --check src/",
+    "lint": "oxlint src/ claude-plugin/",
+    "lint:fix": "oxlint --fix src/ claude-plugin/",
+    "format": "oxfmt --write src/ claude-plugin/",
+    "format:check": "oxfmt --check src/ claude-plugin/",
     "prepare": "husky"
   },
   "dependencies": {
