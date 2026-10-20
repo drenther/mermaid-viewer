@@ -3,3 +3,9 @@ minimumReleaseAge: 10080
 blockExoticSubdeps: true
 trustPolicy: no-downgrade
 onlyBuiltDependencies: []
+# Locked versions that predate trustPolicy: newer releases gained provenance, so
+# re-resolution flags these as downgrades. Exact versions only; approved 2026-10-20.
+trustPolicyExclude:
+  - rollup@2.80.0 # workbox-build 7.4.0
+  - semver@6.3.1 # @babel/core
+  - reselect@5.1.1 # @base-ui/utils
