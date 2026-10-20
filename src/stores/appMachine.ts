@@ -1,7 +1,9 @@
 import { setup, assign, fromPromise, fromCallback, sendTo, type ActorRefFrom } from "xstate";
-import { renderMermaidSVG, renderMermaidASCII, THEMES } from "beautiful-mermaid";
 import { loadDiagramFromUrl, buildShareUrl } from "../lib/shareUrl";
 import { copyToClipboard } from "../lib/clipboard";
+import { effectiveView, getRenderer } from "../renderers";
+import type { Engine, RenderError, RenderOutput, RenderRequest, View } from "../renderers/types";
+import { preferencesStore, activeTheme } from "./preferencesStore";
 
 export const SAMPLE_DIAGRAM = `graph TD
   A[Start] --> B{Decision}
@@ -11,10 +13,28 @@ export const SAMPLE_DIAGRAM = `graph TD
   D --> E
   E --> F((End))`;
 
-export type ThemeName = "github-light" | "github-dark";
-export type Renderer = "svg" | "ascii";
-
 const hashPresent = typeof window !== "undefined" && window.location.hash.startsWith("#code/");
+
+/** The engine and view an output was rendered with. They trail the preferences while a
+ * re-render is pending, so the preview and exports follow the output on screen. */
+export interface RenderedWith {
+  engine: Engine;
+  view: View;
+}
+
+type RenderInput = RenderRequest & { engine: Engine };
+
+function requestedOutput(): RenderedWith {
+  const { engine, view } = preferencesStore.getSnapshot().context;
+  return { engine, view: effectiveView(engine, view) };
+}
+
+// pele sizes shapes from measured label widths, so it must measure the font the
+// preview shows the SVG in.
+function previewFontFamily(): string {
+  const preview = document.querySelector(".preview-content");
+  return (preview && getComputedStyle(preview).fontFamily) || "Inter, sans-serif";
+}
 
 // ---------------------------------------------------------------------------
 // Reusable copy machine — pluggable via `prepare` transform
@@ -94,33 +114,35 @@ export const appMachine = setup({
   types: {
     context: {} as {
       code: string;
-      theme: ThemeName;
-      renderer: Renderer;
       svgOutput: string;
       asciiOutput: string;
-      error: string | null;
+      error: RenderError | null;
       asciiUnsupported: boolean;
+      renderedWith: RenderedWith;
       codeCopyRef: CopyActorRef;
-      svgCopyRef: CopyActorRef;
-      asciiCopyRef: CopyActorRef;
       shareCopyRef: CopyActorRef;
     },
     events: {} as
       | { type: "setCode"; code: string }
-      | { type: "setTheme"; theme: ThemeName }
-      | { type: "setRenderer"; renderer: Renderer }
       | { type: "importFile"; text: string }
       | { type: "loadDiagram"; code: string }
       | { type: "copyCode" }
-      | { type: "copySvg" }
-      | { type: "copyAscii" }
       | { type: "share" }
-      | { type: "hashChanged" },
+      | { type: "hashChanged" }
+      | { type: "rendererChanged" }
+      | { type: "themeChanged" }
+      | { type: "fontsLoaded" },
   },
   actors: {
     loadFromUrl: fromPromise<string | null, void>(async () => {
       return loadDiagramFromUrl();
     }),
+    renderDiagram: fromPromise<{ result: RenderOutput; renderedWith: RenderedWith }, RenderInput>(
+      async ({ input }) => ({
+        result: await getRenderer(input.engine).render(input),
+        renderedWith: { engine: input.engine, view: input.view },
+      }),
+    ),
     hashWatcher: fromCallback(({ sendBack }) => {
       const handler = () => {
         if (window.location.hash.startsWith("#code/")) {
@@ -130,67 +152,41 @@ export const appMachine = setup({
       window.addEventListener("hashchange", handler);
       return () => window.removeEventListener("hashchange", handler);
     }),
+    prefsWatcher: fromCallback(({ sendBack }) => {
+      let prev = preferencesStore.getSnapshot().context;
+      const sub = preferencesStore.subscribe(({ context }) => {
+        if (context.engine !== prev.engine || context.view !== prev.view) {
+          sendBack({ type: "rendererChanged" });
+        } else if (activeTheme(context) !== activeTheme(prev)) {
+          sendBack({ type: "themeChanged" });
+        }
+        prev = context;
+      });
+      return () => sub.unsubscribe();
+    }),
+    // Labels measured before the web fonts load are too narrow or too wide.
+    fontWatcher: fromCallback(({ sendBack }) => {
+      let active = true;
+      document.fonts.ready.then(() => {
+        if (active) sendBack({ type: "fontsLoaded" });
+      });
+      return () => {
+        active = false;
+      };
+    }),
     copyMachine,
   },
   actions: {
-    performRender: assign(({ context }) => {
-      const trimmed = context.code.trim();
-      if (!trimmed) {
-        return {
-          svgOutput: "",
-          asciiOutput: "",
-          error: null,
-          asciiUnsupported: false,
-        };
-      }
-      try {
-        const svg = renderMermaidSVG(trimmed, {
-          ...THEMES[context.theme],
-          transparent: true,
-        });
-        if (context.renderer === "svg") {
-          return { svgOutput: svg, error: null, asciiUnsupported: false };
-        }
-        try {
-          const ascii = renderMermaidASCII(trimmed, {
-            colorMode: "html",
-            theme: THEMES[context.theme],
-          });
-          return {
-            svgOutput: svg,
-            asciiOutput: ascii,
-            error: null,
-            asciiUnsupported: false,
-          };
-        } catch {
-          return {
-            svgOutput: svg,
-            asciiOutput: "",
-            asciiUnsupported: true,
-            error: null,
-          };
-        }
-      } catch (err: any) {
-        return {
-          error: err?.message || "Failed to render diagram",
-          asciiUnsupported: false,
-        };
-      }
-    }),
+    clearOutput: assign(() => ({
+      svgOutput: "",
+      asciiOutput: "",
+      error: null,
+      asciiUnsupported: false,
+      renderedWith: requestedOutput(),
+    })),
     forwardCopyCode: sendTo(
       ({ context }) => context.codeCopyRef,
       ({ context }) => ({ type: "copy" as const, text: context.code }),
-    ),
-    forwardCopySvg: sendTo(
-      ({ context }) => context.svgCopyRef,
-      ({ context }) => ({ type: "copy" as const, text: context.svgOutput }),
-    ),
-    forwardCopyAscii: sendTo(
-      ({ context }) => context.asciiCopyRef,
-      ({ context }) => ({
-        type: "copy" as const,
-        text: context.asciiOutput.replace(/<[^>]*>/g, ""),
-      }),
     ),
     forwardShare: sendTo(
       ({ context }) => context.shareCopyRef,
@@ -199,27 +195,22 @@ export const appMachine = setup({
   },
   guards: {
     hasHash: () => hashPresent,
+    isBlank: ({ context }) => !context.code.trim(),
+    // ASCII colors are inline, so only ASCII needs a re-render. The SVG
+    // picks up a theme change through SvgViewer's themeVars.
+    showsAscii: () => requestedOutput().view === "ascii",
   },
 }).createMachine({
   id: "app",
   context: ({ spawn }) => ({
     code: hashPresent ? "" : SAMPLE_DIAGRAM,
-    theme: "github-dark" as ThemeName,
-    renderer: "svg" as Renderer,
     svgOutput: "",
     asciiOutput: "",
     error: null,
     asciiUnsupported: false,
+    renderedWith: requestedOutput(),
     codeCopyRef: spawn("copyMachine", {
       id: "codeCopy",
-      input: {},
-    }),
-    svgCopyRef: spawn("copyMachine", {
-      id: "svgCopy",
-      input: {},
-    }),
-    asciiCopyRef: spawn("copyMachine", {
-      id: "asciiCopy",
       input: {},
     }),
     shareCopyRef: spawn("copyMachine", {
@@ -252,20 +243,60 @@ export const appMachine = setup({
       },
     },
     ready: {
-      invoke: {
-        src: "hashWatcher",
-      },
+      invoke: [{ src: "hashWatcher" }, { src: "prefsWatcher" }, { src: "fontWatcher" }],
       initial: "debouncing",
       states: {
+        // Every input change lands here. Leaving `rendering` stops its actor, so a
+        // slow render (pele loads on first use) never overwrites newer output.
         debouncing: {
           after: {
-            300: {
-              target: "idle",
-              actions: "performRender",
-            },
+            300: [
+              { guard: "isBlank", target: "idle", actions: "clearOutput" },
+              { target: "rendering" },
+            ],
           },
         },
-        idle: {},
+        rendering: {
+          invoke: {
+            src: "renderDiagram",
+            input: ({ context }) => {
+              const prefs = preferencesStore.getSnapshot().context;
+              return {
+                code: context.code.trim(),
+                ...requestedOutput(),
+                tokens: activeTheme(prefs).tokens,
+                fontFamily: previewFontFamily(),
+              };
+            },
+            onDone: {
+              target: "idle",
+              actions: assign(({ event }) => {
+                const { result, renderedWith } = event.output;
+                if (!result.ok) return { error: result.error, asciiUnsupported: false };
+                return {
+                  svgOutput: result.svg,
+                  asciiOutput: result.ascii ?? "",
+                  error: null,
+                  asciiUnsupported: result.asciiUnsupported,
+                  renderedWith,
+                };
+              }),
+            },
+            onError: {
+              target: "idle",
+              actions: assign({
+                error: ({ event }) => ({
+                  message: (event.error as Error)?.message || "Failed to render diagram",
+                }),
+                asciiUnsupported: false,
+              }),
+            },
+          },
+          on: { fontsLoaded: "debouncing" },
+        },
+        idle: {
+          on: { fontsLoaded: "debouncing" },
+        },
         loadingFromHash: {
           invoke: {
             src: "loadFromUrl",
@@ -275,9 +306,10 @@ export const appMachine = setup({
                 target: "debouncing",
                 actions: assign({ code: ({ event }) => event.output! }),
               },
-              { target: "idle" },
+              // Back to debouncing, not idle: the hash change may have cut off a render.
+              { target: "debouncing" },
             ],
-            onError: "idle",
+            onError: "debouncing",
           },
         },
       },
@@ -287,12 +319,9 @@ export const appMachine = setup({
           actions: assign({ code: ({ event }) => event.code }),
           target: ".debouncing",
         },
-        setTheme: {
-          actions: assign({ theme: ({ event }) => event.theme }),
-          target: ".debouncing",
-        },
-        setRenderer: {
-          actions: assign({ renderer: ({ event }) => event.renderer }),
+        rendererChanged: { target: ".debouncing" },
+        themeChanged: {
+          guard: "showsAscii",
           target: ".debouncing",
         },
         importFile: {
@@ -304,8 +333,6 @@ export const appMachine = setup({
           target: ".debouncing",
         },
         copyCode: { actions: "forwardCopyCode" },
-        copySvg: { actions: "forwardCopySvg" },
-        copyAscii: { actions: "forwardCopyAscii" },
         share: { actions: "forwardShare" },
       },
     },

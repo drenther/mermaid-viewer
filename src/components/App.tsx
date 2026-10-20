@@ -1,18 +1,30 @@
-import React, { useRef, useSyncExternalStore } from "react";
-import { THEMES } from "beautiful-mermaid";
+import React, { useMemo, useRef, useSyncExternalStore } from "react";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Toggle } from "@base-ui/react/toggle";
-import { Menu } from "@base-ui/react/menu";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { Group, Panel, Separator } from "react-resizable-panels";
-import { useActor, useSelector } from "@xstate/react";
+import { useActor, useSelector as useXStateSelector } from "@xstate/react";
+import { useSelector } from "@xstate/store/react";
 import { MermaidEditor } from "./MermaidEditor";
 import { SvgViewer } from "./SvgViewer";
+import { ThemePicker } from "./ThemePicker";
+import { ExportMenu } from "./ExportMenu";
 import { SaveDiagramDialog } from "./SaveDiagramDialog";
 import { DiagramLibraryDialog } from "./DiagramLibraryDialog";
 import { PwaToast } from "./PwaToast";
 import { layoutStore } from "../stores/layoutStore";
-import { appMachine, type ThemeName, type Renderer, type CopyActorRef } from "../stores/appMachine";
+import {
+  preferencesStore,
+  activeTheme,
+  pickedTheme,
+  resolvedMode,
+  type ModePreference,
+} from "../stores/preferencesStore";
+import { appMachine, type CopyActorRef } from "../stores/appMachine";
+import { ENGINE_CAPS, effectiveView, getRenderer } from "../renderers";
+import type { Engine, View } from "../renderers/types";
+import { getTheme } from "../themes/registry";
+import type { ThemeId, ThemeMode } from "../themes/types";
 import { motion, AnimatePresence } from "motion/react";
 import "../styles/app.css";
 
@@ -28,33 +40,76 @@ const getServerSnapshot = () => false;
 const selectCopied = (s: { context: { copied: boolean } }) => s.context.copied;
 
 function useCopied(ref: CopyActorRef): boolean {
-  return useSelector(ref, selectCopied);
+  return useXStateSelector(ref, selectCopied);
 }
+
+// The chrome follows only the light/dark mode and always uses the GitHub
+// palette. The selected theme applies to the preview pane alone.
+function chromeVars(id: ThemeId): React.CSSProperties {
+  const t = getTheme(id)!.tokens;
+  return {
+    "--bg": t.bg,
+    "--fg": t.fg,
+    "--accent": t.accent,
+    "--muted": t.muted,
+    "--line": t.line,
+    "--surface": t.surface,
+    "--surface-2": t.surfaceAlt,
+    "--border": t.border,
+  } as React.CSSProperties;
+}
+
+const CHROME_VARS: Record<ThemeMode, React.CSSProperties> = {
+  light: chromeVars("github-light"),
+  dark: chromeVars("github-dark"),
+};
+
+const PELE_ASCII_NOTE = "pele has no text output — your ASCII choice is kept for beautiful-mermaid";
 
 function App() {
   const [snapshot, send] = useActor(appMachine);
   const {
     code,
-    theme,
-    renderer,
     svgOutput,
     asciiOutput,
     error,
     asciiUnsupported,
+    renderedWith,
     codeCopyRef,
-    svgCopyRef,
-    asciiCopyRef,
     shareCopyRef,
   } = snapshot.context;
 
   const codeCopied = useCopied(codeCopyRef);
-  const svgCopied = useCopied(svgCopyRef);
-  const asciiCopied = useCopied(asciiCopyRef);
   const shareCopied = useCopied(shareCopyRef);
 
   const isMobile = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const isDark = theme === "github-dark";
-  const themeColors = THEMES[theme];
+  const modePreference = useSelector(preferencesStore, (s) => s.context.mode);
+  const mode = useSelector(preferencesStore, (s) => resolvedMode(s.context));
+  const theme = useSelector(preferencesStore, (s) => activeTheme(s.context));
+  const themePicks = useSelector(preferencesStore, (s) => s.context.theme);
+  const engine = useSelector(preferencesStore, (s) => s.context.engine);
+  // The stored view survives engines that can't show it; the toggle shows what renders.
+  const view = useSelector(preferencesStore, (s) =>
+    effectiveView(s.context.engine, s.context.view),
+  );
+  const isDark = mode === "dark";
+  const asciiBlocked = !ENGINE_CAPS[engine].views.includes("ascii");
+
+  // The output on screen may come from the previous engine until the re-render lands
+  const themeVars = useMemo(
+    () => getRenderer(renderedWith.engine).themeVars(theme.tokens),
+    [renderedWith.engine, theme],
+  );
+  const exportPair = useMemo(() => {
+    const light = pickedTheme(themePicks, "light");
+    const dark = pickedTheme(themePicks, "dark");
+    return {
+      light: light.tokens,
+      dark: dark.tokens,
+      lightTitle: light.title,
+      darkTitle: dark.title,
+    };
+  }, [themePicks]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const appRootRef = useRef<HTMLDivElement>(null);
@@ -71,87 +126,13 @@ function App() {
     e.target.value = "";
   };
 
-  const handleDownloadSVG = () => {
-    if (!svgOutput) return;
-    const blob = new Blob([svgOutput], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "diagram.svg";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleDownloadPNG = () => {
-    if (!svgOutput) return;
-    const svgTag = svgOutput.match(/<svg[^>]*>/);
-    if (!svgTag) return;
-
-    let width = 800;
-    let height = 600;
-
-    const widthMatch = svgTag[0].match(/width="([^"]+)"/);
-    const heightMatch = svgTag[0].match(/height="([^"]+)"/);
-    if (widthMatch && heightMatch) {
-      width = parseFloat(widthMatch[1]);
-      height = parseFloat(heightMatch[1]);
-    } else {
-      const viewBoxMatch = svgTag[0].match(/viewBox="[^"]*\s([\d.]+)\s([\d.]+)"/);
-      if (viewBoxMatch) {
-        width = parseFloat(viewBoxMatch[1]);
-        height = parseFloat(viewBoxMatch[2]);
-      }
-    }
-
-    const scale = 2;
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = width * scale;
-      canvas.height = height * scale;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
-      ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "diagram.png";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }, "image/png");
-    };
-    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgOutput);
-  };
-
   const portalContainer = appRootRef.current ?? undefined;
 
-  // SVG/ASCII output is generated by beautiful-mermaid's renderer from
+  // SVG/ASCII output is generated by beautiful-mermaid or pele from
   // Mermaid DSL — it is trusted library output, not arbitrary user HTML.
   return (
     <Tooltip.Provider delay={400} closeDelay={0}>
-      <div
-        ref={appRootRef}
-        className={`app-root ${isDark ? "dark" : "light"}`}
-        style={
-          {
-            "--bg": themeColors.bg,
-            "--fg": themeColors.fg,
-            "--accent": themeColors.accent || "#4493f8",
-            "--muted": themeColors.muted || "#9198a1",
-            "--line": themeColors.line || "#3d444d",
-            "--surface": isDark ? "#161b22" : "#f6f8fa",
-            "--surface-2": isDark ? "#1c2129" : "#eef1f5",
-            "--border": isDark ? "#30363d" : "#d0d7de",
-          } as React.CSSProperties
-        }
-      >
+      <div ref={appRootRef} className={`app-root ${mode}`} style={CHROME_VARS[mode]}>
         <div className="app-layout">
           <header className="app-header">
             <div className="header-left">
@@ -176,18 +157,20 @@ function App() {
             </div>
             <div className="header-controls">
               <ToggleGroup
-                value={[theme]}
+                value={[modePreference]}
                 onValueChange={(val) => {
                   if (val.length)
-                    send({ type: "setTheme", theme: val[val.length - 1] as ThemeName });
+                    preferencesStore.trigger.setMode({
+                      mode: val[val.length - 1] as ModePreference,
+                    });
                 }}
                 className="toggle-group"
-                aria-label="Theme"
+                aria-label="Color mode"
               >
-                <Toggle value="github-light" className="toggle-btn" aria-label="Light theme">
-                  {theme === "github-light" && (
+                <Toggle value="light" className="toggle-btn" aria-label="Light mode">
+                  {modePreference === "light" && (
                     <motion.span
-                      layoutId="theme-pill"
+                      layoutId="mode-pill"
                       className="toggle-pill"
                       transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
                     />
@@ -203,12 +186,12 @@ function App() {
                     <circle cx="12" cy="12" r="5" />
                     <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
                   </svg>
-                  Light
+                  <span className="toggle-label">Light</span>
                 </Toggle>
-                <Toggle value="github-dark" className="toggle-btn" aria-label="Dark theme">
-                  {theme === "github-dark" && (
+                <Toggle value="dark" className="toggle-btn" aria-label="Dark mode">
+                  {modePreference === "dark" && (
                     <motion.span
-                      layoutId="theme-pill"
+                      layoutId="mode-pill"
                       className="toggle-pill"
                       transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
                     />
@@ -223,9 +206,31 @@ function App() {
                   >
                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                   </svg>
-                  Dark
+                  <span className="toggle-label">Dark</span>
+                </Toggle>
+                <Toggle value="system" className="toggle-btn" aria-label="System mode">
+                  {modePreference === "system" && (
+                    <motion.span
+                      layoutId="mode-pill"
+                      className="toggle-pill"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                    />
+                  )}
+                  <svg
+                    width="13"
+                    height="13"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="2" y="3" width="20" height="14" rx="2" />
+                    <path d="M8 21h8M12 17v4" />
+                  </svg>
+                  <span className="toggle-label">System</span>
                 </Toggle>
               </ToggleGroup>
+              <ThemePicker portalContainer={portalContainer} />
             </div>
           </header>
 
@@ -442,7 +447,7 @@ function App() {
               <Panel
                 id="preview"
                 className="panel preview-panel"
-                minSize={isMobile ? "100px" : "200px"}
+                minSize={isMobile ? "100px" : "280px"}
               >
                 <div className="panel-tab">
                   <svg
@@ -461,19 +466,55 @@ function App() {
 
                   <div className="panel-tab-actions">
                     <ToggleGroup
-                      value={[renderer]}
+                      value={[engine]}
                       onValueChange={(val) => {
                         if (val.length)
-                          send({
-                            type: "setRenderer",
-                            renderer: val[val.length - 1] as Renderer,
+                          preferencesStore.trigger.setEngine({
+                            engine: val[val.length - 1] as Engine,
                           });
+                      }}
+                      className="toggle-group"
+                      aria-label="Rendering engine"
+                    >
+                      <Toggle
+                        value="beautiful"
+                        className="toggle-btn"
+                        aria-label="beautiful-mermaid engine"
+                      >
+                        {engine === "beautiful" && (
+                          <motion.span
+                            layoutId="engine-pill"
+                            className="toggle-pill"
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                          />
+                        )}
+                        <span className="label-full">{ENGINE_CAPS.beautiful.label}</span>
+                        <span className="label-short">Beautiful</span>
+                      </Toggle>
+                      <Toggle value="pele" className="toggle-btn" aria-label="pele engine">
+                        {engine === "pele" && (
+                          <motion.span
+                            layoutId="engine-pill"
+                            className="toggle-pill"
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                          />
+                        )}
+                        <span className="label-full">{ENGINE_CAPS.pele.label}</span>
+                        <span className="label-short">Pele</span>
+                      </Toggle>
+                    </ToggleGroup>
+
+                    <ToggleGroup
+                      value={[view]}
+                      onValueChange={(val) => {
+                        if (val.length)
+                          preferencesStore.trigger.setView({ view: val[val.length - 1] as View });
                       }}
                       className="toggle-group"
                       aria-label="Renderer"
                     >
                       <Toggle value="svg" className="toggle-btn" aria-label="SVG renderer">
-                        {renderer === "svg" && (
+                        {view === "svg" && (
                           <motion.span
                             layoutId="renderer-pill"
                             className="toggle-pill"
@@ -482,193 +523,59 @@ function App() {
                         )}
                         SVG
                       </Toggle>
-                      <Toggle value="ascii" className="toggle-btn" aria-label="ASCII renderer">
-                        {renderer === "ascii" && (
-                          <motion.span
-                            layoutId="renderer-pill"
-                            className="toggle-pill"
-                            transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
-                          />
-                        )}
-                        ASCII
-                      </Toggle>
-                    </ToggleGroup>
-
-                    {renderer === "svg" ? (
+                      {/* A disabled button gets no pointer events, so the span carries the tooltip */}
                       <Tooltip.Root>
                         <Tooltip.Trigger
-                          className="icon-btn"
-                          onClick={() => send({ type: "copySvg" })}
-                          disabled={!svgOutput}
-                          aria-label="Copy SVG code"
+                          render={<span className="toggle-tooltip-target" />}
+                          disabled={!asciiBlocked}
                         >
-                          <AnimatePresence mode="wait" initial={false}>
-                            {svgCopied ? (
-                              <motion.span
-                                key="check"
-                                initial={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.5 }}
-                                transition={{ duration: 0.2 }}
-                                style={{ display: "flex" }}
-                              >
-                                <svg
-                                  width="13"
-                                  height="13"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="var(--accent)"
-                                  strokeWidth="2.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                              </motion.span>
-                            ) : (
-                              <motion.span
-                                key="copy"
-                                initial={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.5 }}
-                                transition={{ duration: 0.2 }}
-                                style={{ display: "flex" }}
-                              >
-                                <svg
-                                  width="13"
-                                  height="13"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                </svg>
-                              </motion.span>
-                            )}
-                          </AnimatePresence>
-                        </Tooltip.Trigger>
-                        <Tooltip.Portal container={portalContainer}>
-                          <Tooltip.Positioner sideOffset={6}>
-                            <Tooltip.Popup className="tooltip-popup">Copy SVG code</Tooltip.Popup>
-                          </Tooltip.Positioner>
-                        </Tooltip.Portal>
-                      </Tooltip.Root>
-                    ) : (
-                      <Tooltip.Root>
-                        <Tooltip.Trigger
-                          className="icon-btn"
-                          onClick={() => send({ type: "copyAscii" })}
-                          disabled={!asciiOutput}
-                          aria-label="Copy ASCII"
-                        >
-                          <AnimatePresence mode="wait" initial={false}>
-                            {asciiCopied ? (
-                              <motion.span
-                                key="check"
-                                initial={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.5 }}
-                                transition={{ duration: 0.2 }}
-                                style={{ display: "flex" }}
-                              >
-                                <svg
-                                  width="13"
-                                  height="13"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="var(--accent)"
-                                  strokeWidth="2.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <polyline points="20 6 9 17 4 12" />
-                                </svg>
-                              </motion.span>
-                            ) : (
-                              <motion.span
-                                key="copy"
-                                initial={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.5 }}
-                                transition={{ duration: 0.2 }}
-                                style={{ display: "flex" }}
-                              >
-                                <svg
-                                  width="13"
-                                  height="13"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                                </svg>
-                              </motion.span>
-                            )}
-                          </AnimatePresence>
-                        </Tooltip.Trigger>
-                        <Tooltip.Portal container={portalContainer}>
-                          <Tooltip.Positioner sideOffset={6}>
-                            <Tooltip.Popup className="tooltip-popup">Copy ASCII</Tooltip.Popup>
-                          </Tooltip.Positioner>
-                        </Tooltip.Portal>
-                      </Tooltip.Root>
-                    )}
-
-                    <Tooltip.Root>
-                      <Menu.Root>
-                        <Tooltip.Trigger
-                          render={<Menu.Trigger />}
-                          className="icon-btn"
-                          disabled={!svgOutput}
-                          aria-label="Download diagram"
-                        >
-                          <svg
-                            width="13"
-                            height="13"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
+                          <Toggle
+                            value="ascii"
+                            className="toggle-btn"
+                            aria-label="ASCII renderer"
+                            disabled={asciiBlocked}
                           >
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                            <polyline points="7 10 12 15 17 10" />
-                            <line x1="12" y1="15" x2="12" y2="3" />
-                          </svg>
+                            {view === "ascii" && (
+                              <motion.span
+                                layoutId="renderer-pill"
+                                className="toggle-pill"
+                                transition={{ type: "spring", bounce: 0.2, duration: 0.35 }}
+                              />
+                            )}
+                            ASCII
+                          </Toggle>
                         </Tooltip.Trigger>
                         <Tooltip.Portal container={portalContainer}>
-                          <Tooltip.Positioner sideOffset={6}>
-                            <Tooltip.Popup className="tooltip-popup">
-                              Download diagram
+                          <Tooltip.Positioner sideOffset={6} collisionPadding={8}>
+                            <Tooltip.Popup className="tooltip-popup tooltip-popup-wrap">
+                              {PELE_ASCII_NOTE}
                             </Tooltip.Popup>
                           </Tooltip.Positioner>
                         </Tooltip.Portal>
-                        <Menu.Portal container={portalContainer}>
-                          <Menu.Positioner side="bottom" align="end" sideOffset={4}>
-                            <Menu.Popup className="dropdown-menu">
-                              <Menu.Item className="dropdown-menu-item" onClick={handleDownloadSVG}>
-                                Download SVG
-                              </Menu.Item>
-                              <Menu.Item className="dropdown-menu-item" onClick={handleDownloadPNG}>
-                                Download PNG
-                              </Menu.Item>
-                            </Menu.Popup>
-                          </Menu.Positioner>
-                        </Menu.Portal>
-                      </Menu.Root>
-                    </Tooltip.Root>
+                      </Tooltip.Root>
+                    </ToggleGroup>
+
+                    <ExportMenu
+                      engine={renderedWith.engine}
+                      svg={svgOutput}
+                      ascii={renderedWith.view === "ascii" && asciiOutput ? asciiOutput : null}
+                      tokens={theme.tokens}
+                      themeTitle={theme.title}
+                      pair={exportPair}
+                      portalContainer={portalContainer}
+                      disabled={!!error}
+                    />
                   </div>
                 </div>
-                <div className="panel-content preview-content">
+                <div
+                  className="panel-content preview-content"
+                  style={
+                    {
+                      "--preview-bg": theme.tokens.bg,
+                      "--preview-fg": theme.tokens.fg,
+                    } as React.CSSProperties
+                  }
+                >
                   <AnimatePresence mode="wait" initial={false}>
                     {error ? (
                       <motion.div
@@ -694,10 +601,23 @@ function App() {
                               <line x1="12" y1="17" x2="12.01" y2="17" />
                             </svg>
                           </div>
-                          <pre className="error-text">{error}</pre>
+                          <div className="error-body">
+                            <pre className="error-text">{error.message}</pre>
+                            {error.line !== undefined && (
+                              <>
+                                <span className="error-location">
+                                  Line {error.line}
+                                  {error.column !== undefined && `, column ${error.column}`}
+                                </span>
+                                {error.snippet && (
+                                  <pre className="error-snippet">{error.snippet}</pre>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </motion.div>
-                    ) : renderer === "ascii" && asciiUnsupported ? (
+                    ) : renderedWith.view === "ascii" && asciiUnsupported ? (
                       <motion.div
                         key="fallback"
                         initial={{ opacity: 0, y: -8 }}
@@ -728,15 +648,19 @@ function App() {
                             </span>
                             <button
                               className="fallback-switch-btn"
-                              onClick={() => send({ type: "setRenderer", renderer: "svg" })}
+                              onClick={() => preferencesStore.trigger.setView({ view: "svg" })}
                             >
                               Switch to SVG
                             </button>
                           </div>
-                          <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
+                          <SvgViewer
+                            svgHtml={svgOutput}
+                            themeVars={themeVars}
+                            portalContainer={portalContainer}
+                          />
                         </div>
                       </motion.div>
-                    ) : renderer === "svg" ? (
+                    ) : renderedWith.view === "svg" ? (
                       <motion.div
                         key="svg"
                         initial={{ opacity: 0 }}
@@ -745,7 +669,11 @@ function App() {
                         transition={{ duration: 0.15 }}
                         style={{ width: "100%", height: "100%" }}
                       >
-                        <SvgViewer svgHtml={svgOutput} portalContainer={portalContainer} />
+                        <SvgViewer
+                          svgHtml={svgOutput}
+                          themeVars={themeVars}
+                          portalContainer={portalContainer}
+                        />
                       </motion.div>
                     ) : (
                       <motion.div
@@ -775,8 +703,8 @@ function App() {
           <footer className="app-footer">
             <div className="footer-left">
               <span>Powered by</span>
-              <a href="https://agents.craft.do/mermaid" target="_blank" rel="noopener noreferrer">
-                beautiful-mermaid
+              <a href={ENGINE_CAPS[engine].href} target="_blank" rel="noopener noreferrer">
+                {ENGINE_CAPS[engine].label}
               </a>
             </div>
             <div className="footer-right">

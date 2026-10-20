@@ -150,6 +150,17 @@ body {
   color: var(--fg);
 }
 
+/* No pointer events, so hovering reaches the tooltip wrapper around it */
+.toggle-btn[data-disabled] {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+.toggle-tooltip-target {
+  display: flex;
+}
+
 /* Animated pill behind active toggle (positioned via motion layoutId) */
 .toggle-pill {
   position: absolute;
@@ -206,6 +217,7 @@ body {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  container-type: inline-size;
 }
 
 .editor-panel {
@@ -257,6 +269,44 @@ body {
 .panel-tab-actions .icon-btn {
   width: 24px;
   height: 24px;
+}
+
+.label-short {
+  display: none;
+}
+
+/* Toolbars tighten as their panel narrows, from the viewport or the resize handle.
+   Each step makes room for the actions down to the next step; the preview panel's
+   minimum width (App.tsx) fits its last one. */
+@container (max-width: 420px) {
+  .label-full {
+    display: none;
+  }
+
+  .label-short {
+    display: inline;
+  }
+}
+
+@container (max-width: 360px) {
+  .preview-panel .panel-tab {
+    padding: 0 10px;
+  }
+
+  /* The icon still names the panel */
+  .preview-panel .panel-tab > span {
+    display: none;
+  }
+}
+
+@container (max-width: 260px) {
+  .editor-panel .panel-tab {
+    padding: 0 10px;
+  }
+
+  .editor-panel .panel-tab > span {
+    display: none;
+  }
 }
 
 /* Download Dropdown */
@@ -319,6 +369,136 @@ body {
   border-top: 1px solid var(--border);
 }
 
+.dropdown-menu-item[data-disabled] {
+  color: var(--muted);
+  cursor: default;
+}
+
+.dropdown-menu-note {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dropdown-menu-separator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--border);
+}
+
+/* Theme Picker */
+.theme-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 8px 0 7px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+
+.theme-trigger:hover,
+.theme-trigger[data-popup-open] {
+  border-color: var(--muted);
+  background: var(--surface-2);
+}
+
+.theme-trigger-value {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-trigger-icon {
+  display: flex;
+  color: var(--muted);
+}
+
+.theme-swatch {
+  display: flex;
+  flex-shrink: 0;
+  height: 14px;
+  border-radius: 3px;
+  overflow: hidden;
+  /* Outline paints over the stripes, so pale swatches keep an edge */
+  outline: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+  outline-offset: -1px;
+}
+
+.theme-swatch > span {
+  width: 6px;
+}
+
+.theme-menu {
+  min-width: 220px;
+  max-height: var(--available-height);
+}
+
+.theme-menu-list {
+  overflow-y: auto;
+}
+
+.theme-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px;
+  color: var(--fg);
+  cursor: pointer;
+  outline: none;
+  transition: background var(--transition);
+}
+
+.theme-menu-item[data-highlighted] {
+  background: var(--bg);
+}
+
+.theme-menu-item + .theme-menu-item {
+  border-top: 1px solid var(--border);
+}
+
+.theme-menu-item .theme-swatch {
+  height: 16px;
+}
+
+.theme-menu-item .theme-swatch > span {
+  width: 7px;
+}
+
+.theme-menu-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.theme-menu-item-title {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.theme-menu-item-source {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.theme-menu-item-check {
+  display: flex;
+  color: var(--accent);
+}
+
 /* Panel Content */
 .panel-content {
   flex: 1;
@@ -330,8 +510,10 @@ body {
   background: var(--bg);
 }
 
+/* The preview takes the selected theme; controls inside it keep the chrome vars */
 .preview-content {
-  background: var(--bg);
+  background: var(--preview-bg, var(--bg));
+  color: var(--preview-fg, var(--fg));
   position: relative;
   overflow: hidden;
 }
@@ -492,7 +674,7 @@ body {
   font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 13px;
   line-height: 1.3;
-  color: var(--fg);
+  color: var(--preview-fg, var(--fg));
   white-space: pre;
   text-align: left;
   padding: 24px;
@@ -530,6 +712,34 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
+}
+
+.error-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.error-location {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.error-snippet {
+  font-family: "JetBrains Mono", monospace;
+  /* Show the source characters the caret points at, not "-->" as an arrow */
+  font-variant-ligatures: none;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fg);
+  margin: 0;
+  padding: 8px 10px;
+  background: color-mix(in srgb, #f85149 6%, var(--bg));
+  border-radius: calc(var(--radius) - 2px);
+  overflow-x: auto;
 }
 
 /* ===== ASCII FALLBACK ===== */
@@ -960,10 +1170,6 @@ body {
     max-height: calc(100dvh - 32px);
   }
 
-  .toggle-btn span:not(:only-child) {
-    display: none;
-  }
-
   .header-sep {
     margin: 0 2px;
   }
@@ -979,12 +1185,28 @@ body {
     font-size: 11px;
   }
 
+  /* Compact trigger: swatch only, title kept for screen readers */
+  .theme-trigger-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
   .footer-left {
     display: none;
   }
 
   .footer-right {
     margin-left: auto;
+  }
+}
+
+/* Icons alone keep the three color modes beside the theme picker */
+@media (max-width: 350px) {
+  .toggle-label {
+    display: none;
   }
 }
 
@@ -1004,6 +1226,11 @@ body {
 
 .dark .tooltip-popup {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip-popup-wrap {
+  max-width: 240px;
+  white-space: normal;
 }
 
 /* Scrollbar styling */

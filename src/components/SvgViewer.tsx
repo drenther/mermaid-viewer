@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useLayoutEffect } from "react";
+import React, { useRef, useCallback, useEffect, useLayoutEffect, useMemo } from "react";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { useStore, useSelector } from "@xstate/store/react";
 import { motion } from "motion/react";
@@ -6,6 +6,8 @@ import { motion } from "motion/react";
 interface SvgViewerProps {
   svgHtml: string;
   portalContainer?: HTMLElement;
+  /** CSS custom properties set on the root <svg>, so a theme change needs no re-render */
+  themeVars?: Record<string, string>;
 }
 
 const MIN_ZOOM = 0.1;
@@ -220,9 +222,9 @@ const viewerStoreConfig = {
   },
 };
 
-// svgHtml is trusted output from beautiful-mermaid's renderMermaidSVG,
+// svgHtml is trusted output from beautiful-mermaid or pele,
 // not arbitrary user HTML.
-export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
+export function SvgViewer({ svgHtml, portalContainer, themeVars }: SvgViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -232,10 +234,23 @@ export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
   const pan = useSelector(store, (s) => s.context.pan);
   const mode = useSelector(store, (s) => s.context.mode);
 
+  // React 19 rewrites innerHTML whenever this object changes, which would re-parse the
+  // SVG on every pan frame and drop the theme vars set below.
+  const innerHtml = useMemo(() => ({ __html: svgHtml }), [svgHtml]);
+
   // Reset zoom/pan when SVG content changes
   useLayoutEffect(() => {
     store.trigger.resetView();
   }, [svgHtml, store]);
+
+  // Override the renderer's inline color vars before paint
+  useLayoutEffect(() => {
+    const svgEl = contentRef.current?.querySelector("svg");
+    if (!svgEl || !themeVars) return;
+    for (const [name, value] of Object.entries(themeVars)) {
+      svgEl.style.setProperty(name, value);
+    }
+  }, [svgHtml, themeVars]);
 
   // Fit to container on initial load
   useEffect(() => {
@@ -374,9 +389,9 @@ export function SvgViewer({ svgHtml, portalContainer }: SvgViewerProps) {
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
         }}
-        // svgHtml is trusted output from beautiful-mermaid's renderer,
+        // svgHtml is trusted output from beautiful-mermaid or pele,
         // not arbitrary user HTML.
-        dangerouslySetInnerHTML={{ __html: svgHtml }}
+        dangerouslySetInnerHTML={innerHtml}
       />
 
       {/* Floating controls */}
