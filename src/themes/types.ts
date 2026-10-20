@@ -39,6 +39,15 @@ export interface ThemeTokens {
   radius: number;
 }
 
+/** Editor syntax colors */
+export interface SyntaxTokens {
+  keyword: string;
+  type: string;
+  string: string;
+  number: string;
+  comment: string;
+}
+
 export interface ThemeDef {
   id: ThemeId;
   /** Display name, e.g. "Rosé Pine" */
@@ -47,4 +56,6 @@ export interface ThemeDef {
   /** Where the palette comes from, shown under the name in the picker */
   source: string;
   tokens: ThemeTokens;
+  /** Left out, the editor takes its colors from the series */
+  syntax?: SyntaxTokens;
 }

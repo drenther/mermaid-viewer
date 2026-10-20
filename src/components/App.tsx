@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useSyncExternalStore } from "react";
+import React, { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { Toggle } from "@base-ui/react/toggle";
 import { Tooltip } from "@base-ui/react/tooltip";
@@ -23,8 +23,7 @@ import {
 import { appMachine, type CopyActorRef } from "../stores/appMachine";
 import { ENGINE_CAPS, effectiveView, getRenderer } from "../renderers";
 import type { Engine, View } from "../renderers/types";
-import { getTheme } from "../themes/registry";
-import type { ThemeId, ThemeMode } from "../themes/types";
+import { chromeVars } from "../themes/chrome";
 import { motion, AnimatePresence } from "motion/react";
 import "../styles/app.css";
 
@@ -42,27 +41,6 @@ const selectCopied = (s: { context: { copied: boolean } }) => s.context.copied;
 function useCopied(ref: CopyActorRef): boolean {
   return useXStateSelector(ref, selectCopied);
 }
-
-// The chrome follows only the light/dark mode and always uses the GitHub
-// palette. The selected theme applies to the preview pane alone.
-function chromeVars(id: ThemeId): React.CSSProperties {
-  const t = getTheme(id)!.tokens;
-  return {
-    "--bg": t.bg,
-    "--fg": t.fg,
-    "--accent": t.accent,
-    "--muted": t.muted,
-    "--line": t.line,
-    "--surface": t.surface,
-    "--surface-2": t.surfaceAlt,
-    "--border": t.border,
-  } as React.CSSProperties;
-}
-
-const CHROME_VARS: Record<ThemeMode, React.CSSProperties> = {
-  light: chromeVars("github-light"),
-  dark: chromeVars("github-dark"),
-};
 
 const PELE_ASCII_NOTE = "pele has no text output — your ASCII choice is kept for beautiful-mermaid";
 
@@ -93,6 +71,7 @@ function App() {
     effectiveView(s.context.engine, s.context.view),
   );
   const isDark = mode === "dark";
+  const chrome = useMemo(() => chromeVars(theme) as React.CSSProperties, [theme]);
   const asciiBlocked = !ENGINE_CAPS[engine].views.includes("ascii");
 
   // The output on screen may come from the previous engine until the re-render lands
@@ -110,6 +89,13 @@ function App() {
       darkTitle: dark.title,
     };
   }, [themePicks]);
+
+  // The browser's own chrome (mobile address bar, installed app title bar) matches the header
+  useEffect(() => {
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", theme.tokens.surface);
+  }, [theme]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const appRootRef = useRef<HTMLDivElement>(null);
@@ -132,7 +118,7 @@ function App() {
   // Mermaid DSL — it is trusted library output, not arbitrary user HTML.
   return (
     <Tooltip.Provider delay={400} closeDelay={0}>
-      <div ref={appRootRef} className={`app-root ${mode}`} style={CHROME_VARS[mode]}>
+      <div ref={appRootRef} className={`app-root ${mode}`} style={chrome}>
         <div className="app-layout">
           <header className="app-header">
             <div className="header-left">
@@ -567,15 +553,7 @@ function App() {
                     />
                   </div>
                 </div>
-                <div
-                  className="panel-content preview-content"
-                  style={
-                    {
-                      "--preview-bg": theme.tokens.bg,
-                      "--preview-fg": theme.tokens.fg,
-                    } as React.CSSProperties
-                  }
-                >
+                <div className="panel-content preview-content">
                   <AnimatePresence mode="wait" initial={false}>
                     {error ? (
                       <motion.div
@@ -726,8 +704,8 @@ function App() {
             </div>
           </footer>
         </div>
+        <PwaToast />
       </div>
-      <PwaToast />
     </Tooltip.Provider>
   );
 }

@@ -2,7 +2,7 @@ import type { ThemeDef, ThemeId, ThemeMode, ThemeTokens } from "./types";
 
 // Palettes come from tuios.dev/sketch `themes.go`, a port of pele v1.6.0: pele's own
 // default, the themes on pele's site and launch video, plus a few terminal themes.
-// The GitHub pair is this app's own palette.
+// The GitHub pair is this app's own palette, with GitHub's editor colors.
 
 type Series = ThemeTokens["series"];
 
@@ -66,6 +66,13 @@ export const THEMES: readonly ThemeDef[] = [
       ],
       radius: 6,
     },
+    syntax: {
+      keyword: "#cf222e",
+      type: "#953800",
+      string: "#0a3069",
+      number: "#0550ae",
+      comment: "#6e7781",
+    },
   },
   {
     id: "github-dark",
@@ -94,6 +101,13 @@ export const THEMES: readonly ThemeDef[] = [
       ],
       radius: 6,
     },
+    syntax: {
+      keyword: "#ff7b72",
+      type: "#ffa657",
+      string: "#a5d6ff",
+      number: "#79c0ff",
+      comment: "#8b949e",
+    },
   },
   {
     id: "pele",
@@ -121,6 +135,14 @@ export const THEMES: readonly ThemeDef[] = [
         "#9d755d",
       ],
       radius: 0,
+    },
+    // The series is in chart order, not hue order
+    syntax: {
+      keyword: "#4c78a8",
+      type: "#b279a2",
+      string: "#54a24b",
+      number: "#e45756",
+      comment: "#6e6e6e",
     },
   },
   {

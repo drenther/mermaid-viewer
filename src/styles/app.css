@@ -40,11 +40,17 @@ body {
 .app-root {
   height: 100%;
   width: 100%;
+  /* Native controls and scrollbars follow the mode */
+  color-scheme: light;
   background: var(--bg);
   color: var(--fg);
   transition:
     background var(--transition),
     color var(--transition);
+}
+
+.app-root.dark {
+  color-scheme: dark;
 }
 
 /* Content wrapper — isolation: isolate creates a stacking context so that
@@ -510,10 +516,9 @@ body {
   background: var(--bg);
 }
 
-/* The preview takes the selected theme; controls inside it keep the chrome vars */
 .preview-content {
-  background: var(--preview-bg, var(--bg));
-  color: var(--preview-fg, var(--fg));
+  background: var(--bg);
+  color: var(--fg);
   position: relative;
   overflow: hidden;
 }
@@ -674,7 +679,7 @@ body {
   font-family: "JetBrains Mono", "Fira Code", monospace;
   font-size: 13px;
   line-height: 1.3;
-  color: var(--preview-fg, var(--fg));
+  color: var(--fg);
   white-space: pre;
   text-align: left;
   padding: 24px;
@@ -691,8 +696,8 @@ body {
   gap: 10px;
   padding: 16px 20px;
   margin: 32px;
-  background: color-mix(in srgb, #f85149 8%, var(--bg));
-  border: 1px solid color-mix(in srgb, #f85149 25%, var(--border));
+  background: color-mix(in srgb, var(--critical) 8%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--critical) 25%, var(--border));
   border-radius: var(--radius);
   max-width: 600px;
   width: calc(100% - 64px);
@@ -700,7 +705,7 @@ body {
 
 .error-icon {
   flex-shrink: 0;
-  color: #f85149;
+  color: var(--critical);
   padding-top: 2px;
 }
 
@@ -708,7 +713,7 @@ body {
   font-family: "JetBrains Mono", monospace;
   font-size: 12px;
   line-height: 1.6;
-  color: color-mix(in srgb, #f85149 80%, var(--fg));
+  color: color-mix(in srgb, var(--critical) 80%, var(--fg));
   white-space: pre-wrap;
   word-break: break-word;
   margin: 0;
@@ -737,7 +742,7 @@ body {
   color: var(--fg);
   margin: 0;
   padding: 8px 10px;
-  background: color-mix(in srgb, #f85149 6%, var(--bg));
+  background: color-mix(in srgb, var(--critical) 6%, var(--bg));
   border-radius: calc(var(--radius) - 2px);
   overflow-x: auto;
 }
@@ -839,12 +844,12 @@ body {
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  background: var(--surface, #161b22);
-  border: 1px solid var(--border, #30363d);
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   font-size: 12px;
-  color: var(--fg, #e6edf3);
+  color: var(--fg);
 }
 
 .pwa-toast-actions {
@@ -856,8 +861,8 @@ body {
 
 .pwa-toast-reload {
   padding: 4px 10px;
-  background: var(--accent, #4493f8);
-  color: #fff;
+  background: var(--accent);
+  color: var(--bg);
   border: none;
   border-radius: 4px;
   font-family: inherit;
@@ -880,14 +885,14 @@ body {
   padding: 0;
   background: transparent;
   border: none;
-  color: var(--muted, #9198a1);
+  color: var(--muted);
   cursor: pointer;
   border-radius: 4px;
   transition: color var(--transition);
 }
 
 .pwa-toast-close:hover {
-  color: var(--fg, #e6edf3);
+  color: var(--fg);
 }
 
 /* ===== DIALOG ===== */
@@ -1016,7 +1021,7 @@ body {
 
 .dialog-btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--bg);
   border-color: var(--accent);
 }
 
@@ -1120,8 +1125,8 @@ body {
 }
 
 .diagram-list-item-action-danger:hover {
-  background: color-mix(in srgb, #f85149 10%, var(--surface));
-  color: #f85149;
+  background: color-mix(in srgb, var(--critical) 10%, var(--surface));
+  color: var(--critical);
 }
 
 .diagram-list-empty {
@@ -1234,38 +1239,20 @@ body {
 }
 
 /* Scrollbar styling */
-.app-root.dark ::-webkit-scrollbar {
+.app-root ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-.app-root.dark ::-webkit-scrollbar-track {
+.app-root ::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.app-root.dark ::-webkit-scrollbar-thumb {
+.app-root ::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 4px;
 }
 
-.app-root.dark ::-webkit-scrollbar-thumb:hover {
+.app-root ::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
-}
-
-.app-root.light ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.app-root.light ::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.app-root.light ::-webkit-scrollbar-thumb {
-  background: #d1d9e0;
-  border-radius: 4px;
-}
-
-.app-root.light ::-webkit-scrollbar-thumb:hover {
-  background: #8b949e;
 }

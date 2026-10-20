@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { EditorState } from "@codemirror/state";
+import { Compartment, EditorState } from "@codemirror/state";
 import {
   EditorView,
   keymap,
@@ -17,127 +17,65 @@ import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { mermaid } from "codemirror-lang-mermaid";
 import { tags } from "@lezer/highlight";
 
-// GitHub Dark theme for CodeMirror
-const githubDarkTheme = EditorView.theme(
-  {
-    "&": {
-      backgroundColor: "transparent",
-      color: "#e6edf3",
-      fontSize: "13px",
-      fontFamily:
-        '"JetBrains Mono", "Fira Code", "SF Mono", "Cascadia Code", "Consolas", monospace',
-    },
-    ".cm-content": {
-      caretColor: "#79c0ff",
-      lineHeight: "1.65",
-      padding: "12px 0",
-    },
-    ".cm-cursor, .cm-dropCursor": {
-      borderLeftColor: "#79c0ff",
-      borderLeftWidth: "2px",
-    },
-    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
-      backgroundColor: "#264f78 !important",
-    },
-    ".cm-activeLine": {
-      backgroundColor: "#161b2240",
-    },
-    ".cm-gutters": {
-      backgroundColor: "transparent",
-      color: "#484f58",
-      border: "none",
-      paddingLeft: "8px",
-    },
-    ".cm-activeLineGutter": {
-      color: "#e6edf3",
-      backgroundColor: "transparent",
-    },
-    ".cm-lineNumbers .cm-gutterElement": {
-      padding: "0 12px 0 4px",
-      minWidth: "32px",
-      fontSize: "12px",
-    },
-    ".cm-line": {
-      padding: "0 16px",
-    },
+// Colors are the theme's CSS variables (see themes/chrome.ts), so a theme change
+// restyles the editor without touching it.
+const editorTheme = EditorView.theme({
+  "&": {
+    backgroundColor: "transparent",
+    color: "var(--fg)",
+    fontSize: "13px",
+    fontFamily: '"JetBrains Mono", "Fira Code", "SF Mono", "Cascadia Code", "Consolas", monospace',
   },
-  { dark: true },
-);
-
-// GitHub Light theme for CodeMirror
-const githubLightTheme = EditorView.theme(
-  {
-    "&": {
-      backgroundColor: "transparent",
-      color: "#1f2328",
-      fontSize: "13px",
-      fontFamily:
-        '"JetBrains Mono", "Fira Code", "SF Mono", "Cascadia Code", "Consolas", monospace',
-    },
-    ".cm-content": {
-      caretColor: "#0969da",
-      lineHeight: "1.65",
-      padding: "12px 0",
-    },
-    ".cm-cursor, .cm-dropCursor": {
-      borderLeftColor: "#0969da",
-      borderLeftWidth: "2px",
-    },
-    "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
-      backgroundColor: "#b6d8fc !important",
-    },
-    ".cm-activeLine": {
-      backgroundColor: "#f6f8fa80",
-    },
-    ".cm-gutters": {
-      backgroundColor: "transparent",
-      color: "#8b949e",
-      border: "none",
-      paddingLeft: "8px",
-    },
-    ".cm-activeLineGutter": {
-      color: "#1f2328",
-      backgroundColor: "transparent",
-    },
-    ".cm-lineNumbers .cm-gutterElement": {
-      padding: "0 12px 0 4px",
-      minWidth: "32px",
-      fontSize: "12px",
-    },
-    ".cm-line": {
-      padding: "0 16px",
-    },
+  ".cm-content": {
+    caretColor: "var(--accent)",
+    lineHeight: "1.65",
+    padding: "12px 0",
   },
-  { dark: false },
-);
+  ".cm-cursor, .cm-dropCursor": {
+    borderLeftColor: "var(--accent)",
+    borderLeftWidth: "2px",
+  },
+  "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
+    backgroundColor: "color-mix(in srgb, var(--accent) 35%, var(--bg)) !important",
+  },
+  ".cm-activeLine": {
+    backgroundColor: "color-mix(in srgb, var(--surface) 50%, transparent)",
+  },
+  ".cm-gutters": {
+    backgroundColor: "transparent",
+    color: "color-mix(in srgb, var(--muted) 65%, var(--bg))",
+    border: "none",
+    paddingLeft: "8px",
+  },
+  ".cm-activeLineGutter": {
+    color: "var(--fg)",
+    backgroundColor: "transparent",
+  },
+  ".cm-lineNumbers .cm-gutterElement": {
+    padding: "0 12px 0 4px",
+    minWidth: "32px",
+    fontSize: "12px",
+  },
+  ".cm-line": {
+    padding: "0 16px",
+  },
+});
 
-// Dark syntax highlighting (Lezer tag-based)
-const darkHighlightStyle = HighlightStyle.define([
-  { tag: tags.keyword, color: "#ff7b72", fontWeight: "600" },
-  { tag: tags.controlKeyword, color: "#ff7b72", fontWeight: "600" },
-  { tag: tags.typeName, color: "#ffa657" },
-  { tag: tags.string, color: "#a5d6ff" },
-  { tag: tags.content, color: "#a5d6ff" },
-  { tag: tags.lineComment, color: "#8b949e", fontStyle: "italic" },
-  { tag: tags.variableName, color: "#e6edf3" },
-  { tag: tags.number, color: "#79c0ff" },
-  { tag: tags.contentSeparator, color: "#ff7b72" },
-  { tag: tags.modifier, color: "#79c0ff" },
+const highlightStyle = HighlightStyle.define([
+  { tag: tags.keyword, color: "var(--syntax-keyword)", fontWeight: "600" },
+  { tag: tags.controlKeyword, color: "var(--syntax-keyword)", fontWeight: "600" },
+  { tag: tags.typeName, color: "var(--syntax-type)" },
+  { tag: tags.string, color: "var(--syntax-string)" },
+  { tag: tags.content, color: "var(--syntax-string)" },
+  { tag: tags.lineComment, color: "var(--syntax-comment)", fontStyle: "italic" },
+  { tag: tags.variableName, color: "var(--fg)" },
+  { tag: tags.number, color: "var(--syntax-number)" },
+  { tag: tags.contentSeparator, color: "var(--syntax-keyword)" },
+  { tag: tags.modifier, color: "var(--syntax-number)" },
 ]);
 
-// Light syntax highlighting (Lezer tag-based)
-const lightHighlightStyle = HighlightStyle.define([
-  { tag: tags.keyword, color: "#cf222e", fontWeight: "600" },
-  { tag: tags.controlKeyword, color: "#cf222e", fontWeight: "600" },
-  { tag: tags.typeName, color: "#953800" },
-  { tag: tags.string, color: "#0a3069" },
-  { tag: tags.content, color: "#0a3069" },
-  { tag: tags.lineComment, color: "#6e7781", fontStyle: "italic" },
-  { tag: tags.variableName, color: "#24292f" },
-  { tag: tags.number, color: "#0550ae" },
-  { tag: tags.contentSeparator, color: "#cf222e" },
-  { tag: tags.modifier, color: "#0550ae" },
-]);
+// CodeMirror's own defaults (search panel, selection matches) still follow light/dark
+const darkMode = new Compartment();
 
 interface MermaidEditorProps {
   value: string;
@@ -176,8 +114,9 @@ export function MermaidEditor({ value, onChange, isDark }: MermaidEditorProps) {
         crosshairCursor(),
         history(),
         mermaid(),
-        isDark ? githubDarkTheme : githubLightTheme,
-        syntaxHighlighting(isDark ? darkHighlightStyle : lightHighlightStyle),
+        editorTheme,
+        darkMode.of(EditorView.darkTheme.of(isDark)),
+        syntaxHighlighting(highlightStyle),
         keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
         updateListener,
         EditorView.lineWrapping,
@@ -195,7 +134,11 @@ export function MermaidEditor({ value, onChange, isDark }: MermaidEditorProps) {
       view.destroy();
       viewRef.current = null;
     };
-  }, [isDark]); // Recreate view when theme changes
+  }, []);
+
+  useEffect(() => {
+    viewRef.current?.dispatch({ effects: darkMode.reconfigure(EditorView.darkTheme.of(isDark)) });
+  }, [isDark]);
 
   // Sync external value changes
   useEffect(() => {

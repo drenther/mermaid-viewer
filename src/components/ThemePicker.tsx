@@ -30,7 +30,7 @@ export function ThemePicker({ portalContainer }: ThemePickerProps) {
         if (id) preferencesStore.trigger.setTheme({ id });
       }}
     >
-      <Select.Trigger className="theme-trigger" aria-label="Diagram theme">
+      <Select.Trigger className="theme-trigger" aria-label="Theme">
         <Select.Value className="theme-trigger-value">
           {(id: ThemeId) => {
             const selected = getTheme(id) ?? theme;
