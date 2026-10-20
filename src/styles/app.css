@@ -813,6 +813,7 @@ body {
 }
 
 .footer-left,
+.footer-center,
 .footer-right {
   display: flex;
   align-items: center;
@@ -1167,6 +1168,10 @@ body {
     padding: 0 10px;
     white-space: nowrap;
     overflow: hidden;
+  }
+
+  .footer-center {
+    display: none;
   }
 
   .dialog-popup {

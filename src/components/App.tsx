@@ -685,6 +685,16 @@ function App() {
                 {ENGINE_CAPS[engine].label}
               </a>
             </div>
+            <div className="footer-center">
+              <span>Now available as a</span>
+              <a
+                href="https://github.com/drenther/mermaid-viewer#claude-code-plugin"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Claude Code plugin
+              </a>
+            </div>
             <div className="footer-right">
               <span>made with</span>
               <Tooltip.Root>
